@@ -11,3 +11,11 @@ Part 2: Predict the neural activity with the task-driven modeling approach </br>
 &rarr; In `week 6` </br>
 Part 3: Predict the neural activity using a data-driven approach </br>
 &rarr; In `week 7` </br>
+Part 4: Find the best model </br>
+&rarr; In `week 8`, using previous findings </br>
+
+## Setup the environment
+
+## Folder structure
+
+## Additional commands
