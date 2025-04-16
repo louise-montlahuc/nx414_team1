@@ -1,6 +1,8 @@
 import torch
 from fvcore.common.registry import Registry
 
+import Imodel
+
 MODEL_REGISTRY = Registry("MODEL")
 MODEL_REGISTRY.__doc__ = """
 Registry for models.
@@ -19,7 +21,7 @@ def build_model(name):
     """
     model = MODEL_REGISTRY.get(name)()
 
-    if torch.cuda.is_available():
+    if isinstance(model, Imodel) and torch.cuda.is_available():
         device = torch.device("cuda")
         model = model.to(device)
     
