@@ -2,9 +2,16 @@
 import h5py
 import os
 
+import gdown
 import matplotlib.pyplot as plt
 import numpy as np
 
+def download_data(path_to_data):
+    output = "IT_data.h5"
+    data_path = os.path.join(path_to_data, output)
+    if not os.path.exists(data_path):
+        url = "https://drive.google.com/file/d/1s6caFNRpyR9m7ZM6XEv_e8mcXT3_PnHS/view?usp=share_link"
+        gdown.download(url, os.path.join(path_to_data, output), quiet=False, fuzzy=True)
 
 def load_it_data(path_to_data):
     """ Load IT data

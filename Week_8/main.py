@@ -2,26 +2,70 @@ import argparse
 
 import torch
 from torch import nn
+from scipy.stats import pearsonr
 
-from Week_8.models import build
-from Week_8.tools.optimizer import make_optimizer
-from Week_8.tools.trainer import do_train
+from models.IModel import IModel
+from models.build import make_model
+from tools.dataloader import make_dataloader, get_data
+from tools.optimizer import make_optimizer
+from tools.trainer import do_train
+from tools.regression import fit
+from utils.plotter import Plotter
+from utils.utils import download_data
 
 def main(args):
-    trainloader, testloader = make_dataloader()
-    model = build(args.name, args.pretrained)
-    optim = make_optimizer(model, args.optimizer, args.lr, args.weight_decay)
-    criterion = nn.CrossEntropyLoss()
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    do_train(model, trainloader, testloader, optim, criterion, args.epochs, device)
+    download_data('./data') # download the data if not already done
+    model, device = make_model(args.name)
+    if args.finetune: # don't finetune for the moment
+        optim = make_optimizer(model, args.optimizer, args.lr, args.weight_decay)
+        criterion = nn.CrossEntropyLoss()
+        trainloader, testloader = make_dataloader(args.batch_size, args.driven)
+        do_train(model, trainloader, testloader, optim, criterion, args.epochs, device)
+
+    if isinstance(model, IModel):
+        linprob(model, device)
+
+def linprob(model, device):
+    # Perform linear probing
+    model.eval()
+    layer_regressions = dict()
+    with torch.no_grad():
+        train_data, val_data = get_data()
+        stimulus_train, _, spikes_train = train_data
+        stimulus_train = torch.from_numpy(stimulus_train).to(device)
+        spikes_train = torch.from_numpy(spikes_train).to(device)
+        stimulus_val, _, spikes_val = val_data
+        stimulus_val = torch.from_numpy(stimulus_val).to(device)
+        spikes_val = torch.from_numpy(spikes_val).to(device)
+        model.register_hook(args.hook)
+        # Fit the regression on the activations of the training set
+        model(stimulus_train)
+        activations = model.get_activations(args.hook)
+        for layer in model.get_layers():
+            layer_regressions[layer] = fit(activations[layer], spikes_train, method='linear')
+
+        # Test the regression on the validation set
+        model.reset_activations()
+        model(stimulus_val)
+        activations = model.get_activations(args.hook)
+        for layer, regr in layer_regressions.items():
+            pred_activity = regr.predict(activations[layer])
+            correlations = []
+            for i in range(spikes_val.shape[1]):
+                corr, _ = pearsonr(pred_activity[:, i], spikes_val[:, i])
+                correlations.append(corr)
+            Plotter.save_corr_plot(data=corr, title=f'Correlation between predicted and actual spikes for layer {layer}', save_path=f'saved/correlation_layer_{layer}.png')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--name', default='resnet18', help='Model name', type=str)
-    parser.add_argument('-p', '--pretrained', action='store_true', help='Whether to load a pretrained model')
+    parser.add_argument('-n', '--name', default='ResNet18', help='Model name', type=str)
+    parser.add_argument('-d', '--driven', default='task', help='Task- or data-driven model', type=str)
+    parser.add_argument('--hook', default='all', help='Hook name', type=str)
     parser.add_argument('-o', '--optimizer', default='adamw', help='Optimizer name', type=str)
     parser.add_argument('--lr', default=1e-3, help='Learning rate', type=float)
     parser.add_argument('--weight_decay', default=1e-4, help='Weight decay factor', type=float)
     parser.add_argument('-b', '--batch_size', default=32, help='Size of batches', type=int)
+    parser.add_argument('-e', '--epochs', default=10, help='Number of epochs', type=int)
+    parser.add_argument('-f', '--finetune', action='store_true', help='Whether to finetune the model')
     args = parser.parse_args()
     main(args)
