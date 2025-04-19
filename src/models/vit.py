@@ -1,16 +1,13 @@
-from torchvision.models import resnet18, ResNet18_Weights
+from torchvision.models import vit_b_16, ViT_B_16_Weights
 
 from models.IModel import IModel
 from models.build import MODEL_REGISTRY
 
 @MODEL_REGISTRY.register()
-class ResNet18(IModel):
+class ViT(IModel):
     def __init__(self):
-        super(ResNet18, self).__init__()
-        self.model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
-
-    def forward(self, images):
-        return self.model(images)
+        super(ViT, self).__init__()
+        self.model = vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
     
     def get_layers(self):
         """

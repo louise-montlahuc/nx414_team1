@@ -8,9 +8,6 @@ class ResNet50(IModel):
     def __init__(self):
         super(ResNet50, self).__init__()
         self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
-
-    def forward(self, images):
-        return self.model(images)
     
     def get_layers(self):
         """

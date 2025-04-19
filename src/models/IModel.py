@@ -6,11 +6,15 @@ class IModel(ABC, nn.Module):
     """
     Abstract base class for a model.
     This class defines the interface that all model classes must implement.
+    All models inheriting from this class should have a self.model attribute!
     """
     def __init__(self):
         super().__init__()
         self.PCs = dict()
         self.ACTs = dict()
+
+    def forward(self, images):
+        return self.model(images)
 
     def get_activations(self, hook_name):
         """

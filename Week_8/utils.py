@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def download_data(path_to_data):
+    if not os.path.exists(path_to_data):
+        os.makedirs(os.path.dirname(path_to_data))
     output = "IT_data.h5"
     data_path = os.path.join(path_to_data, output)
     if not os.path.exists(data_path):

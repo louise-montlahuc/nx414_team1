@@ -1,16 +1,13 @@
-from torchvision.models import convnext_base, ConvNeXt_Base_Weights
+from torchvision.models import resnet18, ResNet18_Weights
 
 from models.IModel import IModel
 from models.build import MODEL_REGISTRY
 
 @MODEL_REGISTRY.register()
-class ConvNeXt(IModel):
+class ResNet18(IModel):
     def __init__(self):
-        super(ConvNeXt, self).__init__()
-        self.model = convnext_base(weights=ConvNeXt_Base_Weights.IMAGENET1K_V1)
-
-    def forward(self, images):
-        return self.model(images)
+        super(ResNet18, self).__init__()
+        self.model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
     
     def get_layers(self):
         """

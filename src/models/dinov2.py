@@ -8,9 +8,6 @@ class DinoV2(IModel):
     def __init__(self):
         super(DinoV2, self).__init__()
         self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
-
-    def forward(self, images):
-        return self.model(images)
     
     def get_layers(self):
         """
