@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 
 class Plotter():
@@ -7,5 +9,7 @@ class Plotter():
         plt.xlabel('Explained variance')
         plt.ylabel('# neurons')
         plt.title(title)
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
         plt.savefig(path)
         plt.close()

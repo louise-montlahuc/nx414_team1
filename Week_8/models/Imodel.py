@@ -41,9 +41,7 @@ class IModel(ABC, nn.Module):
         self.PCs[layer_name] = pca_features
 
     def _get_activations_hook(self, module, input, output, layer_name):
-        print('Layer:', layer_name)
         activations = output.detach().cpu().numpy().reshape(output.shape[0], -1)
-        print('Activations shape:', activations.shape)
         self.ACTs[layer_name] = activations
     
     def register_hook(self, hook_name):
@@ -51,12 +49,14 @@ class IModel(ABC, nn.Module):
         Registers a hook to the model.
         The hook can be 'all' for all activations or 'pca' for 1000 principal components.
         """
-        print(self.get_layers())
+        handles = []
         for name, layer in self.get_layers():
             if hook_name == 'all':
-                layer.register_forward_hook(lambda m, i, o, n=name: self._get_activations_hook(m, i, o, n))
+                handle = layer.register_forward_hook(lambda m, i, o, n=name: self._get_activations_hook(m, i, o, n))
             elif hook_name == 'pca':
-                layer.register_forward_hook(lambda m, i, o, n=name: self._get_PCs_hook(m, i, o, n))
+                handle = layer.register_forward_hook(lambda m, i, o, n=name: self._get_PCs_hook(m, i, o, n))
+            handles.append(handle)
+        return handles
 
     @abstractmethod
     def get_layers(self):

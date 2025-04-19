@@ -19,11 +19,6 @@ def make_model(name):
     Returns:
         model (nn.Module): the built model.
     """
-    device = 'cpu'
     model = MODEL_REGISTRY.get(name)()
-
-    if isinstance(model, IModel) and torch.cuda.is_available():
-        device = torch.device("cuda")
-        model = model.to(device)
     
-    return model, device
+    return model
