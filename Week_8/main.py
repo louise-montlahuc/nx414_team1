@@ -28,9 +28,9 @@ def main(args):
         do_train(model, trainloader, testloader, optim, criterion, args.epochs, device)
 
     if isinstance(model, IModel):
-        linprob(model, device)
+        linprob(model, device, args.name)
 
-def linprob(model, device):
+def linprob(model, device, name):
     # Perform linear probing
     model.eval()
     layer_regressions = dict()
@@ -70,7 +70,11 @@ def linprob(model, device):
             for i in range(spikes_val.shape[1]):
                 corr, _ = pearsonr(pred_activity[:, i], spikes_val[:, i])
                 correlations.append(corr)
-            Plotter.save_corr_plot(data=correlations, title=f'Correlation between predicted and actual spikes for layer {layer_name}', path=f'saved/correlation_layer_{layer_name}.png')
+            Plotter.save_corr_plot(
+                data=correlations,
+                title=f'[{name}] Correlation between predicted and actual spikes for layer {layer_name}',
+                path=f'saved/{name}_correlation_layer_{layer_name}.png'
+            )
         print('Done!')
 
 if __name__ == '__main__':
