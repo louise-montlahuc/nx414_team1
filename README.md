@@ -45,7 +45,7 @@ TODO
 ## Commands
 The code should be run using the command line. The main file is `main.py` and the arguments are as follows:
 ```bash
-python main.py -n <model_name> -d <task/data> -o <optimizer_name> -k <all/pca> -f <finetune> -p <probing_name>
+python main.py -n <model_name> -d <task/data> -o <optimizer_name> -k <all/pca> -f <finetune> --lr <lr> -p <probing_name>
 ```
 
 - `-n` or `--name`: name of the model to use. The default is `ResNet18`.
@@ -70,9 +70,12 @@ python main.py -n <model_name> -d <task/data> -o <optimizer_name> -k <all/pca> -
 - `-k` or `--hook`: how the activations are saved via the hook. The default is `all`.
     - `all`: all the activations
     - `pca`: PCA of the activations
-- `-f` or `--finetune`: whether to finetune the model or not. The default is `False`.
 - `-p` or `--probing`: type of probing to use. The default is `linear`.
     - `linear`: linear regression probing
     - `ridge`: Ridge regression probing
     - `mlp`: MLP regression probing
+- `-f` or `--finetune`: whether to finetune the model or not. The default is `False`.
+    Note: a finetuned model will never use the saved activations.
+- `--lr`: learning rate. The default is `1e-3`.
+- `--epochs`: number of epochs to train the model. The default is `10`.
 - `--nosaved`: whether to use the saved activations or not. The default is `True`.

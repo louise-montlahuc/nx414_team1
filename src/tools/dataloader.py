@@ -1,5 +1,6 @@
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, Dataset
+from sklearn.calibration import LabelEncoder
 
 from utils.utils import load_it_data
 
@@ -23,6 +24,10 @@ def make_dataloader(batch_size, driven='task'):
     """
     train_data, val_data = get_data()
     if driven == 'task':
+        train_dataset = ITDataSet(train_data[0], train_data[1])
+        val_dataset = ITDataSet(val_data[0], val_data[1])
+        num_classes = len(set(train_data[1]))
+    elif driven == 'data':
         train_dataset = TensorDataset(
             torch.from_numpy(train_data[0]).float(),
             torch.from_numpy(train_data[2]).float()
@@ -32,19 +37,26 @@ def make_dataloader(batch_size, driven='task'):
             torch.from_numpy(val_data[0]).float(),
             torch.from_numpy(val_data[2]).float()
         )
-    elif driven == 'data':
-        train_dataset = TensorDataset(
-            torch.from_numpy(train_data[0]).float(),
-            torch.from_numpy(train_data[1]).float()
-        )
-
-        val_dataset = TensorDataset(
-            torch.from_numpy(val_data[0]).float(),
-            torch.from_numpy(val_data[1]).float()
-        )
+        num_classes = 1 # only one output for regression
     else:
         raise ValueError("driven must be either 'task' or 'data'")
     
     trainloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    return trainloader, valloader
+    return trainloader, valloader, num_classes
+
+class ITDataSet(Dataset):
+    def __init__(self, images, labels):
+        super().__init__()
+        self.images = torch.from_numpy(images).float()
+        label_encoder = LabelEncoder()
+        encoded_labels = label_encoder.fit_transform(labels)
+        self.labels = encoded_labels
+
+    def __len__(self):
+        return len(self.images)
+    
+    def __getitem__(self, index):
+        image = self.images[index]
+        label = self.labels[index]
+        return image, label

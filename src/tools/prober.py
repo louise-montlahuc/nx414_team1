@@ -29,7 +29,7 @@ def linprob(model, args):
         handles = model.register_hook(args.hook)
         # Fit the regression on the activations of the training set
         print('Computing activations...')
-        if args.saved and os.path.exists(f'./saved/activations/{args.name}_{args.hook}_train_activations.pt'):
+        if args.saved and not args.finetune and os.path.exists(f'./saved/activations/{args.name}_{args.hook}_train_activations.pt'):
             print('Loading saved training activations...')
             activations = torch.load(f'./saved/activations/{args.name}_{args.hook}_train_activations.pt', weights_only=False)
         else:
@@ -46,7 +46,7 @@ def linprob(model, args):
         print('Testing the regression...')
         model.reset_activations()
 
-        if args.saved and os.path.exists(f'./saved/activations/{args.name}_{args.hook}_valid_activations.pt'):
+        if args.saved and not args.finetune and os.path.exists(f'./saved/activations/{args.name}_{args.hook}_valid_activations.pt'):
             print('Loading saved validation activations...')
             activations = torch.load(f'./saved/activations/{args.name}_{args.hook}_valid_activations.pt', weights_only=False)
         else:
@@ -71,6 +71,6 @@ def linprob(model, args):
             Plotter.save_corr_plot(
                 data=correlations,
                 title=f'[{args.name}/{args.hook}/{args.probing}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
-                path=f'./saved/{args.name}_{args.hook}_{args.probing}_correlation_layer_{layer_name}.png'
+                path=f'./saved/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{layer_name}.png'
             )
         print('Done!')

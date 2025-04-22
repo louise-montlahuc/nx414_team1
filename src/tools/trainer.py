@@ -5,24 +5,29 @@ from tqdm import tqdm
 from tools.dataloader import make_dataloader
 from tools.optimizer import make_optimizer
 
-def finetune(model, device, args):
+def finetune(model, args):
+    trainloader, valloader, num_classes = make_dataloader(16, args.driven)
+    # Modify last layer
+    model.replace_head(num_classes)
+    optim = make_optimizer(args.optimizer, model, args.lr, 1e-4)
+
+    device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda")
         model = model.to(device)
 
-    trainloader, valloader = make_dataloader(args.batch_size, args.driven)
-    optim = make_optimizer(model, args.optimizer, args.lr, args.weight_decay)
-
     if args.driven == 'task':
         # Finetunes the model on doing object (image) classification
         criterion = nn.CrossEntropyLoss()
-        do_train(model, trainloader, valloader, optim, criterion, args.epochs, device)
+        do_train(model, trainloader, valloader, optim, criterion, args.epochs, device, args)
     elif args.driven == 'data':
+        # TODO ASK I don't really know how to do that... Maybe we replace the final layer with a
+        # regression head, and finetune the model on the neural data that way?
         raise NotImplementedError("Finetuning on neural data is not implemented yet.")
     else:
         raise ValueError(f"Unknown driven argument: {args.driven}. Supported methods are 'task' and 'data'.")
 
-def do_train(model, train_loader, val_loader, optim, scheduler, criterion, epochs, device):
+def do_train(model, train_loader, val_loader, optim, criterion, epochs, device, args):
     best_valid_loss = float('inf')
     for epoch in range(epochs):
         model.train()
@@ -39,7 +44,6 @@ def do_train(model, train_loader, val_loader, optim, scheduler, criterion, epoch
 
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)
             optim.step()
-            scheduler.step()
 
             train_loss += loss.item() * data.size(0)
 
@@ -61,6 +65,6 @@ def do_train(model, train_loader, val_loader, optim, scheduler, criterion, epoch
 
             if valid_loss < best_valid_loss:
                 best_valid_loss = valid_loss
-                torch.save(model.state_dict(), 'saved/best_model.pth')
+                torch.save(model.state_dict(), f'saved/models/{args.name}_best_model.pth')
                 print(f'Saved best model with validation loss: {best_valid_loss:.4f}')
             

@@ -15,6 +15,10 @@ class IModel(ABC, nn.Module):
 
     def forward(self, images):
         return self.model(images)
+    
+    def replace_head(self, num_classes):
+        n_feats = self.model.fc.in_features
+        self.model.fc = nn.Linear(n_feats, num_classes)
 
     def get_activations(self, hook_name):
         """
