@@ -5,3 +5,6 @@ from .resnext import ResNeXt
 from .vit import ViT
 from .convnext import ConvNeXt
 from .dinov2 import DinoV2
+from . import linear_reg  
+from . import ridge_reg  
+from . import mlp_reg  
