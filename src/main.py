@@ -18,10 +18,7 @@ def main(args):
         model.load_state_dict(torch.load(f'./saved/models/{args.name}_best_model.pth'))
         model.to('cpu') # Make sure the model is back on CPU
 
-    if isinstance(model, IModel):
-        linprob(model, args)
-    else:
-        raise NotImplementedError("Louise") # TODO
+    linprob(model, args)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
