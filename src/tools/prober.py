@@ -1,6 +1,5 @@
 import os
 import torch
-import pandas as pd
 from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 
@@ -46,13 +45,14 @@ def linprob(model, args):
         
         # Fit the regression on the activations of the training set
         print('Computing activations...')
-        if args.saved and not args.finetune and os.path.exists(f'./saved/activations/{args.name}_{args.hook}_train_activations.pt'):
+        save_folder = os.path.join(os.getcwd(), 'saved')
+        if args.saved and not args.finetune and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt'):
             print('Loading saved training activations...')
-            activations = torch.load(f'./saved/activations/{args.name}_{args.hook}_train_activations.pt', weights_only=False)
+            activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt', weights_only=False)
         else:
             model(stimulus_train)
             activations = model.get_activations(args.hook)
-            torch.save(activations, f'./saved/activations/{args.name}_{args.hook}_train_activations.pt')
+            torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt')
 
         print('Fitting the regressions...')
         for layer_name, _ in model.get_layers():
@@ -63,13 +63,13 @@ def linprob(model, args):
         print('Testing the regression...')
         model.reset_activations()
 
-        if args.saved and not args.finetune and os.path.exists(f'./saved/activations/{args.name}_{args.hook}_valid_activations.pt'):
+        if args.saved and not args.finetune and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt'):
             print('Loading saved validation activations...')
-            activations = torch.load(f'./saved/activations/{args.name}_{args.hook}_valid_activations.pt', weights_only=False)
+            activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt', weights_only=False)
         else:
             model(stimulus_val)
             activations = model.get_activations(args.hook)
-            torch.save(activations, f'./saved/activations/{args.name}_{args.hook}_valid_activations.pt')
+            torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt')
 
         ## Remove handles
         for handle in handles:
@@ -88,16 +88,17 @@ def linprob(model, args):
 
             # Compute mean R² score
             r2 = r2_score(spikes_val, pred_activity)
-            new_score = {args.name: r2}
-            Plotter.update_r2_score_csv(new_score, "saved/r2_scores.csv")
+            name = f'{args.name}_{layer_name}' if not args.finetune else f'{args.name}_finetuned_{layer_name}'
+            new_score = {name: r2}
+            Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
             Plotter.save_r2_table(
-                path_csv="saved/r2_scores.csv",
-                path_png="saved/r2_scores.png"
+                path_csv=f"{save_folder}/r2_scores.csv",
+                path_png=f"{save_folder}/r2_scores.png"
             )
 
             Plotter.save_corr_plot(
                 data=correlations,
                 title=f'[{args.name}/{args.hook}/{args.probing}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
-                path=f'./saved/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{layer_name}.png'
+                path=f'{save_folder}/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{layer_name}.png'
             )
         print('Done!')

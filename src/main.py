@@ -3,7 +3,6 @@ import argparse
 import torch
 
 from utils.utils import download_data
-from models.IModel import IModel
 from models.build import make_model
 from tools.trainer import finetune
 from tools.prober import linprob

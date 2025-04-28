@@ -13,5 +13,7 @@ class ConvNeXt(IModel):
         """
         Returns the layers on which to do the linear probing.
         """
-        module = self.model.get_submodule("layer4")
-        return [('layer4', module)]
+        layer7 = list(self.model.children())[-1]
+        print(layer7)
+        classif = self.model.get_submodule("classifier")
+        return [('layer7', layer7), ('classifier', classif)]
