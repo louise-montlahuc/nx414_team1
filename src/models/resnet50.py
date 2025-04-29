@@ -13,5 +13,6 @@ class ResNet50(IModel):
         """
         Returns the layers on which to do the linear probing.
         """
-        module = self.model.get_submodule("layer4")
-        return [('layer4', module)]
+        module_layer4 = self.model.get_submodule("layer4")
+        module_avgpool = self.model.get_submodule("avgpool")
+        return [('layer4', module_layer4), ('avgpool', module_avgpool)]
