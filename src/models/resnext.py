@@ -14,10 +14,15 @@ class ResNeXt(IModel):
         """
         Returns the layers on which to do the linear probing.
         """
-        module = self.model.get_submodule("layer4")
-        return [('layer4', module)]
+        layer3 = self.model.get_submodule("layer3")
+        layer4 = self.model.get_submodule("layer4")
+        avgpool = self.model.get_submodule("avgpool")
+        
+        return [('layer3', layer3), ('layer4', layer4), ('avgpool', avgpool)]
     
     def replace_head(self, num_classes):
         # TODO
         self.fc = nn.Linear(self.model.fc.in_features, num_classes)
         self.model.fc = self.fc
+        
+        
