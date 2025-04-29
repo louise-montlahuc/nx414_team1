@@ -1,7 +1,7 @@
 import torch
 
 def make_optimizer(name, model, lr, weight_decay):
-    classif_params = list(model.model.fc.parameters())
+    classif_params = list(model.fc.parameters())
     all_params = list(model.parameters())
     classif_param_ids = set(id(p) for p in classif_params)
     base_params = [p for p in all_params if id(p) not in classif_param_ids]

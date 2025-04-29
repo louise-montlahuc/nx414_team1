@@ -29,6 +29,6 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--finetune', action='store_true', help='Whether to finetune the model')
     parser.add_argument('--lr', default=1e-3, help='Learning rate for finetuning', type=float)
     parser.add_argument('--epochs', default=10, help='Number of epochs for finetuning', type=int)
-    parser.add_argument('--nosaved', action='store_false', dest='saved', help='Do not use saved activations, if any. Default is to use them')
+    parser.add_argument('--saved', action='store_true', help='Use saved activations, if any. Default is to not use them')
     args = parser.parse_args()
     main(args)

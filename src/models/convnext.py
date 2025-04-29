@@ -1,3 +1,4 @@
+from torch import nn
 from torchvision.models import convnext_base, ConvNeXt_Base_Weights
 
 from models.IModel import IModel
@@ -17,3 +18,8 @@ class ConvNeXt(IModel):
         print(layer7)
         classif = self.model.get_submodule("classifier")
         return [('layer7', layer7), ('classifier', classif)]
+    
+    def replace_head(self, num_classes):
+        # TODO
+        self.fc = nn.Linear(self.model.classifier.in_features, num_classes)
+        self.model.classifier = self.fc

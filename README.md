@@ -78,4 +78,4 @@ python main.py -n <model_name> -d <task/data> -o <optimizer_name> -k <all/pca> -
     Note: a finetuned model will never use the saved activations.
 - `--lr`: learning rate. The default is `1e-3`.
 - `--epochs`: number of epochs to train the model. The default is `10`.
-- `--nosaved`: whether to use the saved activations or not. The default is `True`.
+- `--saved`: whether to use the saved activations or not. The default is `False`.

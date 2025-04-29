@@ -1,3 +1,4 @@
+from torch import nn
 from torchvision.models import resnet18, ResNet18_Weights
 
 from models.IModel import IModel
@@ -16,3 +17,7 @@ class ResNet18(IModel):
         module_layer4 = self.model.get_submodule("layer4")
         module_avgpool = self.model.get_submodule("avgpool")
         return [('layer4', module_layer4), ('avgpool', module_avgpool)]
+
+    def replace_head(self, num_classes):
+        self.fc = nn.Linear(self.model.fc.in_features, num_classes)
+        self.model.fc = self.fc

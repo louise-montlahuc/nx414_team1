@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from torch import nn
 from sklearn.decomposition import PCA
+
 class IModel(ABC, nn.Module):
     """
     Abstract base class for a model.
@@ -12,14 +13,11 @@ class IModel(ABC, nn.Module):
         super().__init__()
         self.PCs = dict()
         self.ACTs = dict()
+        self.fc = None
 
     def forward(self, images):
         return self.model(images)
-    
-    def replace_head(self, num_classes):
-        n_feats = self.model.fc.in_features
-        self.model.fc = nn.Linear(n_feats, num_classes)
-
+        
     def get_activations(self, hook_name):
         """
         Returns the activations of the model.
@@ -73,3 +71,10 @@ class IModel(ABC, nn.Module):
         By default, it returns the last layer of the model.
         """
         pass
+
+    @abstractmethod
+    def replace_head(self, num_classes):
+        """
+        Replaces the head of the model.
+        """
+        raise NotImplementedError("This method should be overridden by subclasses.")
