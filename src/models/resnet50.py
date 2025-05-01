@@ -1,4 +1,3 @@
-from torch import nn
 from torchvision.models import resnet50, ResNet50_Weights
 
 from models.IModel import IModel
@@ -14,6 +13,7 @@ class ResNet50(IModel):
         """
         Returns the layers on which to do the linear probing.
         """
+        module_layer3 = self.model.get_submodule("layer3")
         module_layer4 = self.model.get_submodule("layer4")
         module_avgpool = self.model.get_submodule("avgpool")
-        return [('layer4', module_layer4), ('avgpool', module_avgpool)]
+        return [('layer3', module_layer3), ('layer4', module_layer4), ('avgpool', module_avgpool)]

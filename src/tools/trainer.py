@@ -9,6 +9,7 @@ def finetune(model, args):
     trainloader, valloader, num_classes = make_dataloader(16, args.driven)
     # Cut and set head after specific layer
     model = model.change_head(args.layer, num_classes)
+    print(model)
     optim = make_optimizer(args.optimizer, model, args.lr, 1e-2)
 
     device = torch.device("cpu")
@@ -50,6 +51,7 @@ def do_train(model, train_loader, val_loader, optim, criterion, epochs, device, 
             train_loss += loss.item() * data.size(0)
 
         train_loss /= len(train_loader.dataset)
+        print(f'Train Loss: {train_loss:.4f}')
        
         if val_loader is not None:
             model.eval()
@@ -64,6 +66,7 @@ def do_train(model, train_loader, val_loader, optim, criterion, epochs, device, 
                     valid_loss += loss.item() * data.size(0)
 
             valid_loss /= len(val_loader.dataset)
+            print(f'Validation Loss: {valid_loss:.4f}')
 
             if valid_loss < best_valid_loss:
                 best_valid_loss = valid_loss

@@ -1,4 +1,3 @@
-from torch import nn
 from torchvision.models import resnext101_32x8d, ResNeXt101_32X8D_Weights
 
 from models.IModel import IModel

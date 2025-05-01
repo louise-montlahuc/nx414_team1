@@ -1,4 +1,3 @@
-from torch import nn
 from torchvision.models import convnext_base, ConvNeXt_Base_Weights
 
 from models.IModel import IModel
@@ -15,6 +14,5 @@ class ConvNeXt(IModel):
         Returns the layers on which to do the linear probing.
         """
         layer7 = list(self.model.children())[-1]
-        print(layer7)
         classif = self.model.get_submodule("classifier")
         return [('layer7', layer7), ('classifier', classif)]

@@ -13,14 +13,14 @@ def get_data():
     stimulus_train, stimulus_val, stimulus_test, objects_train, objects_val, objects_test, spikes_train, spikes_val = load_it_data('./data/')
     return (stimulus_train, objects_train, spikes_train), (stimulus_val, objects_val, spikes_val)
 
-def make_dataloader(batch_size, driven='task'):
+def make_dataloader(batch_size, driven='data'):
     """Create a PyTorch data loader, depending on whether the model is data-driven or
     task-driven.
 
     Args:
         batch_size (int): Batch size for the data loader.
         driven (str, optional): 'data' if the model is data-driven, 'task' if the model is
-        task-driven. Defaults to 'task'.
+        task-driven. Defaults to 'data'.
     """
     train_data, val_data = get_data()
     if driven == 'task':

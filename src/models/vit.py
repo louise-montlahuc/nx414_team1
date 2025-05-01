@@ -1,4 +1,3 @@
-from torch import nn
 from torchvision.models import vit_b_16, ViT_B_16_Weights
 
 from models.IModel import IModel

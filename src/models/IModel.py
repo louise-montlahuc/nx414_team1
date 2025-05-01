@@ -97,6 +97,7 @@ class ModifiedModel(IModel):
         dummy_input = torch.randn(1, 3, 224, 224)
         with torch.no_grad():
             out = self._forward_features(dummy_input)
+        out = out.view(out.size(0), -1)
         head_in_features = out.shape[1]
 
         # Define new head (classification or regression)

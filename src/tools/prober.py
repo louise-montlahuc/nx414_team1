@@ -13,40 +13,15 @@ from models.mlp_reg import mlp_reg
 
 def score(model, layer_name, args):
     with torch.no_grad():
-        train_data, val_data = get_data()
-        stimulus_train, _, spikes_train = train_data
-        stimulus_train = torch.from_numpy(stimulus_train)
-        spikes_train = torch.from_numpy(spikes_train)
+        _, val_data = get_data()
         stimulus_val, _, spikes_val = val_data
         stimulus_val = torch.from_numpy(stimulus_val)
         spikes_val = torch.from_numpy(spikes_val)
 
         print('Computing activations...')
         out = model(stimulus_val)
-        print(out.shape)
-        print(spikes_val.shape)
 
-        correlations = []
-        for i in range(spikes_val.shape[1]):
-            corr, _ = pearsonr(out[:, i], spikes_val[:, i])
-            correlations.append(corr)
-
-        # Compute mean R² score
-        r2 = r2_score(spikes_val, out)
-        name = f'{args.name}_finetuned_data_{layer_name}'
-        new_score = {name: r2}
-        save_folder = os.path.join(os.getcwd(), 'saved')
-        Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
-        Plotter.save_r2_table(
-            path_csv=f"{save_folder}/r2_scores.csv",
-            path_png=f"{save_folder}/r2_scores.png"
-        )
-
-        Plotter.save_corr_plot(
-            data=correlations,
-            title=f'[{args.name}/{args.hook}/{args.probing}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
-            path=f'{save_folder}/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{layer_name}.png'
-        )
+        _compute_score(spikes_val, out, layer_name, args)
         print('DONE!')
 
 def linprob(model, args):
@@ -101,27 +76,7 @@ def _linprob_finetuned(model, args):
             regression, scaler = regression
             activations = scaler.transform(activations)
         pred_activity = regression.predict(activations)
-        correlations = []
-        for i in range(spikes_val.shape[1]):
-            corr, _ = pearsonr(pred_activity[:, i], spikes_val[:, i])
-            correlations.append(corr)
-
-        # Compute mean R² score
-        save_folder = os.path.join(os.getcwd(), 'saved')
-        r2 = r2_score(spikes_val, pred_activity)
-        name = f'{args.name}_finetuned_task_{args.layer}'
-        new_score = {name: r2}
-        Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
-        Plotter.save_r2_table(
-            path_csv=f"{save_folder}/r2_scores.csv",
-            path_png=f"{save_folder}/r2_scores.png"
-        )
-
-        Plotter.save_corr_plot(
-            data=correlations,
-            title=f'[{args.name}/{args.hook}/{args.probing}]\nCorrelation between predicted and actual spikes for layer {args.layer}',
-            path=f'{save_folder}/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{args.layer}.png'
-        )
+        _compute_score(spikes_val, pred_activity, args.layer, args)
         print('Done!')
 
 def _linprob(model, args):
@@ -188,24 +143,28 @@ def _linprob(model, args):
                 regr, scaler = regr
                 activations[layer_name] = scaler.transform(activations[layer_name])
             pred_activity = regr.predict(activations[layer_name])
-            correlations = []
-            for i in range(spikes_val.shape[1]):
-                corr, _ = pearsonr(pred_activity[:, i], spikes_val[:, i])
-                correlations.append(corr)
-
-            # Compute mean R² score
-            r2 = r2_score(spikes_val, pred_activity)
-            name = f'{args.name}_pretrained_{layer_name}'
-            new_score = {name: r2}
-            Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
-            Plotter.save_r2_table(
-                path_csv=f"{save_folder}/r2_scores.csv",
-                path_png=f"{save_folder}/r2_scores.png"
-            )
-
-            Plotter.save_corr_plot(
-                data=correlations,
-                title=f'[{args.name}/{args.hook}/{args.probing}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
-                path=f'{save_folder}/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{layer_name}.png'
-            )
+            _compute_score(spikes_val, pred_activity, layer_name, args)
         print('Done!')
+
+def _compute_score(y_true, y_pred, layer_name, args):
+    save_folder = os.path.join(os.getcwd(), 'saved')
+    correlations = []
+    for i in range(y_true.shape[1]):
+        corr, _ = pearsonr(y_pred[:, i], y_true[:, i])
+        correlations.append(corr)
+
+    # Compute mean R² score
+    r2 = r2_score(y_true, y_pred)
+    name = f'{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}'
+    new_score = {name: r2}
+    Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
+    Plotter.save_r2_table(
+        path_csv=f"{save_folder}/r2_scores.csv",
+        path_png=f"{save_folder}/r2_scores.png"
+    )
+
+    Plotter.save_corr_plot(
+        data=correlations,
+        title=f'[{args.name}/{args.probing if not args.finetune else "finetuned"}/{args.hook}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
+        path=f'{save_folder}/figures/corr_{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}.png'
+    )
