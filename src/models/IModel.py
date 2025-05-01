@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import torch
 from torch import nn
 from sklearn.decomposition import PCA
 
@@ -13,7 +14,6 @@ class IModel(ABC, nn.Module):
         super().__init__()
         self.PCs = dict()
         self.ACTs = dict()
-        self.fc = None
 
     def forward(self, images):
         return self.model(images)
@@ -63,6 +63,12 @@ class IModel(ABC, nn.Module):
                 handle = layer.register_forward_hook(lambda m, i, o, n=name: self._get_PCs_hook(m, i, o, n))
             handles.append(handle)
         return handles
+    
+    def change_head(self, layer, num_classes):
+        """
+        Sets a final head (classification or regression) after the indicated layer.
+        """
+        return ModifiedModel(self.model, layer, num_classes)
 
     @abstractmethod
     def get_layers(self):
@@ -70,11 +76,44 @@ class IModel(ABC, nn.Module):
         Returns the layers of the model.
         By default, it returns the last layer of the model.
         """
-        pass
-
-    @abstractmethod
-    def replace_head(self, num_classes):
-        """
-        Replaces the head of the model.
-        """
         raise NotImplementedError("This method should be overridden by subclasses.")
+
+class ModifiedModel(IModel):
+    def __init__(self, base_model, insert_after, num_classes):
+        super().__init__()
+        self.base_model = base_model
+        self.insert_after = insert_after
+        self.num_classes = num_classes
+
+        # Extract layers up to the insertion point
+        self.features = nn.Sequential()
+        for name, module in base_model.named_children():
+            self.features.add_module(name, module)
+            if name == insert_after:
+                self.layer = (name, module)
+                break
+
+        # Determine input dim for new head
+        dummy_input = torch.randn(1, 3, 224, 224)
+        with torch.no_grad():
+            out = self._forward_features(dummy_input)
+        head_in_features = out.shape[1]
+
+        # Define new head (classification or regression)
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(head_in_features, num_classes)
+        )
+
+    def _forward_features(self, x):
+        for name, module in self.features.named_children():
+            x = module(x)
+        return x
+
+    def forward(self, x):
+        x = self._forward_features(x)
+        x = self.fc(x)
+        return x
+    
+    def get_layers(self):
+        return self.layer

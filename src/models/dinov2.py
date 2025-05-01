@@ -18,7 +18,3 @@ class DinoV2(IModel):
         module_block10 = self.model.get_submodule("blocks.10")
         module_block11 = self.model.get_submodule("blocks.11")
         return [('block10', module_block10), ('block11', module_block11), ('norm', module_norm)]
-    
-    def replace_head(self, num_classes):
-        self.fc = nn.Linear(768, num_classes)
-        self.model.head = self.fc

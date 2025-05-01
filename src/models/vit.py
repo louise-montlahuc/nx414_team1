@@ -17,8 +17,3 @@ class ViT(IModel):
         module_encoder = self.model.get_submodule("encoder")
         module_heads = self.model.get_submodule("heads")
         return [('encoder', module_encoder), ('heads', module_heads)]
-    
-    def replace_head(self, num_classes):
-        # TODO
-        self.fc = nn.Linear(self.model.fc.in_features, num_classes)
-        self.model.fc = self.fc

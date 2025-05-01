@@ -11,6 +11,44 @@ from models.linear_reg import linear_reg
 from models.ridge_reg import ridge_reg
 from models.mlp_reg import mlp_reg
 
+def score(model, layer_name, args):
+    with torch.no_grad():
+        train_data, val_data = get_data()
+        stimulus_train, _, spikes_train = train_data
+        stimulus_train = torch.from_numpy(stimulus_train)
+        spikes_train = torch.from_numpy(spikes_train)
+        stimulus_val, _, spikes_val = val_data
+        stimulus_val = torch.from_numpy(stimulus_val)
+        spikes_val = torch.from_numpy(spikes_val)
+
+        print('Computing activations...')
+        out = model(stimulus_val)
+        print(out.shape)
+        print(spikes_val.shape)
+
+        correlations = []
+        for i in range(spikes_val.shape[1]):
+            corr, _ = pearsonr(out[:, i], spikes_val[:, i])
+            correlations.append(corr)
+
+        # Compute mean R² score
+        r2 = r2_score(spikes_val, out)
+        name = f'{args.name}_finetuned_data_{layer_name}'
+        new_score = {name: r2}
+        save_folder = os.path.join(os.getcwd(), 'saved')
+        Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
+        Plotter.save_r2_table(
+            path_csv=f"{save_folder}/r2_scores.csv",
+            path_png=f"{save_folder}/r2_scores.png"
+        )
+
+        Plotter.save_corr_plot(
+            data=correlations,
+            title=f'[{args.name}/{args.hook}/{args.probing}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
+            path=f'{save_folder}/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{layer_name}.png'
+        )
+        print('DONE!')
+
 def linprob(model, args):
     """Linear probing of the model.
 
@@ -18,6 +56,75 @@ def linprob(model, args):
         model (IModel): the model.
         args (argparse.Namespace): the arguments passed to the script.
     """
+    if args.finetune:
+        _linprob_finetuned(model, args)
+    else:
+        _linprob(model, args)
+
+def _linprob_finetuned(model, args):
+    """
+    In this case, the finetuning is done after a given layer (in args). We thus need to probe
+    only the previous to last layer (last is MLP).
+    """
+    model.eval()
+    with torch.no_grad():
+        train_data, val_data = get_data()
+        stimulus_train, _, spikes_train = train_data
+        stimulus_train = torch.from_numpy(stimulus_train)
+        spikes_train = torch.from_numpy(spikes_train)
+        stimulus_val, _, spikes_val = val_data
+        stimulus_val = torch.from_numpy(stimulus_val)
+        spikes_val = torch.from_numpy(spikes_val)
+
+        print('Registering hooks...')
+        handles = model.register_hook(args.hook)
+        
+        model(stimulus_train)
+        activations = model.get_activations(args.hook)
+
+        print('\tLayer:', args.layer)
+        regression = fit(activations, spikes_train, method=args.probing)
+
+        # Test the regression on the validation set
+        print('Testing the regression...')
+        model.reset_activations()
+
+        model(stimulus_val)
+        activations = model.get_activations(args.hook)
+
+        ## Remove handles
+        for handle in handles:
+            handle.remove()
+        
+        print('\tLayer:', args.layer)
+        if isinstance(regression, tuple): # MLP returns both the model and the scaler
+            regression, scaler = regression
+            activations = scaler.transform(activations)
+        pred_activity = regression.predict(activations)
+        correlations = []
+        for i in range(spikes_val.shape[1]):
+            corr, _ = pearsonr(pred_activity[:, i], spikes_val[:, i])
+            correlations.append(corr)
+
+        # Compute mean R² score
+        save_folder = os.path.join(os.getcwd(), 'saved')
+        r2 = r2_score(spikes_val, pred_activity)
+        name = f'{args.name}_finetuned_task_{args.layer}'
+        new_score = {name: r2}
+        Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
+        Plotter.save_r2_table(
+            path_csv=f"{save_folder}/r2_scores.csv",
+            path_png=f"{save_folder}/r2_scores.png"
+        )
+
+        Plotter.save_corr_plot(
+            data=correlations,
+            title=f'[{args.name}/{args.hook}/{args.probing}]\nCorrelation between predicted and actual spikes for layer {args.layer}',
+            path=f'{save_folder}/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{args.layer}.png'
+        )
+        print('Done!')
+
+def _linprob(model, args):
     model.eval()
     layer_regressions = dict()
 
@@ -46,7 +153,7 @@ def linprob(model, args):
         # Fit the regression on the activations of the training set
         print('Computing activations...')
         save_folder = os.path.join(os.getcwd(), 'saved')
-        if args.saved and not args.finetune and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt'):
+        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt'):
             print('Loading saved training activations...')
             activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt', weights_only=False)
         else:
@@ -63,7 +170,7 @@ def linprob(model, args):
         print('Testing the regression...')
         model.reset_activations()
 
-        if args.saved and not args.finetune and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt'):
+        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt'):
             print('Loading saved validation activations...')
             activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt', weights_only=False)
         else:
@@ -88,7 +195,7 @@ def linprob(model, args):
 
             # Compute mean R² score
             r2 = r2_score(spikes_val, pred_activity)
-            name = f'{args.name}_{layer_name}' if not args.finetune else f'{args.name}_finetuned_{layer_name}'
+            name = f'{args.name}_pretrained_{layer_name}'
             new_score = {name: r2}
             Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
             Plotter.save_r2_table(

@@ -19,10 +19,4 @@ class ResNeXt(IModel):
         avgpool = self.model.get_submodule("avgpool")
         
         return [('layer3', layer3), ('layer4', layer4), ('avgpool', avgpool)]
-    
-    def replace_head(self, num_classes):
-        # TODO
-        self.fc = nn.Linear(self.model.fc.in_features, num_classes)
-        self.model.fc = self.fc
-        
         

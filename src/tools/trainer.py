@@ -7,9 +7,9 @@ from tools.optimizer import make_optimizer
 
 def finetune(model, args):
     trainloader, valloader, num_classes = make_dataloader(16, args.driven)
-    # Modify last layer
-    model.replace_head(num_classes)
-    optim = make_optimizer(args.optimizer, model, args.lr, 1e-4)
+    # Cut and set head after specific layer
+    model = model.change_head(args.layer, num_classes)
+    optim = make_optimizer(args.optimizer, model, args.lr, 1e-2)
 
     device = torch.device("cpu")
     if torch.cuda.is_available():
@@ -17,15 +17,17 @@ def finetune(model, args):
         model = model.to(device)
 
     if args.driven == 'task':
-        # Finetunes the model on doing object (image) classification
+        # Finetunes the model by object (image) classification
         criterion = nn.CrossEntropyLoss()
         do_train(model, trainloader, valloader, optim, criterion, args.epochs, device, args)
     elif args.driven == 'data':
-        # TODO ASK I don't really know how to do that... Maybe we replace the final layer with a
-        # regression head, and finetune the model on the neural data that way?
-        raise NotImplementedError("Finetuning on neural data is not implemented yet.")
+        # Finetunes the model by data (neural) regression
+        criterion = nn.MSELoss()
+        do_train(model, trainloader, valloader, optim, criterion, args.epochs, device, args)
     else:
         raise ValueError(f"Unknown driven argument: {args.driven}. Supported methods are 'task' and 'data'.")
+    
+    return model
 
 def do_train(model, train_loader, val_loader, optim, criterion, epochs, device, args):
     best_valid_loss = float('inf')

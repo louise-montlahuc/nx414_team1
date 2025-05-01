@@ -37,7 +37,7 @@ def make_dataloader(batch_size, driven='task'):
             torch.from_numpy(val_data[0]).float(),
             torch.from_numpy(val_data[2]).float()
         )
-        num_classes = 1 # only one output for regression
+        num_classes = 168 # one output per neuron
     else:
         raise ValueError("driven must be either 'task' or 'data'")
     

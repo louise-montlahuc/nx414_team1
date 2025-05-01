@@ -61,9 +61,9 @@ python main.py -n <model_name> -d <task/data> -o <optimizer_name> -k <all/pca> -
         - `DinoV2`
     
     For the pretrained models, the layers to test are automatically selected.
-- `-d` or `--driven`: type of task to use. The default is `task`.
-    - `task`: task-driven modeling approach
+- `-d` or `--driven`: type of task to use. The default is `data`.
     - `data`: data-driven modeling approach
+    - `task`: task-driven modeling approach
 - `-o` or `--optimizer`: type of optimizer to use. The default is `adam`.
     - `adam`: Adam optimizer
     - `sgd`: Stochastic Gradient Descent
