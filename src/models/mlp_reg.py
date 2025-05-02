@@ -6,9 +6,9 @@ from models.build import MODEL_REGISTRY
 
 @MODEL_REGISTRY.register()
 class mlp_reg(IModel):
-    def __init__(self):
+    def __init__(self, seed):
         super(mlp_reg, self).__init__()
-        self.model = MLPRegressor(hidden_layer_sizes=(64, 32), max_iter=200, early_stopping=True, verbose=True) # max_iter is the number of epochs
+        self.model = MLPRegressor(hidden_layer_sizes=(64, 32), max_iter=200, early_stopping=True, verbose=True, random_state=seed) # max_iter is the number of epochs
         self.ACTs = {} 
 
     def forward(self, images):

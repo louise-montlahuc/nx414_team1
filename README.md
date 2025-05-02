@@ -45,7 +45,7 @@ TODO
 ## Commands
 The code should be run using the command line. The main file is `main.py` and the arguments are as follows:
 ```bash
-python main.py -n <model_name> -d <task/data> -o <optimizer_name> -k <all/pca> -f <finetune> --lr <lr> -p <probing_name>
+python main.py -n <model_name> -d <data/task> -o <optimizer_name> -k <all/pca> -f <finetune> --lr <lr> -p <probing_name>
 ```
 
 - `-n` or `--name`: name of the model to use. The default is `ResNet18`.
@@ -61,9 +61,10 @@ python main.py -n <model_name> -d <task/data> -o <optimizer_name> -k <all/pca> -
         - `DinoV2`
     
     For the pretrained models, the layers to test are automatically selected.
-- `-d` or `--driven`: type of task to use. The default is `task`.
-    - `task`: task-driven modeling approach
+- `-f` or `--finetune`: whether to finetune the model or not. The default is `False`.
+- `-d` or `--driven`: type of task to use for finetuning. The default is `data`.
     - `data`: data-driven modeling approach
+    - `task`: task-driven modeling approach
 - `-o` or `--optimizer`: type of optimizer to use. The default is `adam`.
     - `adam`: Adam optimizer
     - `sgd`: Stochastic Gradient Descent
@@ -74,8 +75,6 @@ python main.py -n <model_name> -d <task/data> -o <optimizer_name> -k <all/pca> -
     - `linear`: linear regression probing
     - `ridge`: Ridge regression probing
     - `mlp`: MLP regression probing
-- `-f` or `--finetune`: whether to finetune the model or not. The default is `False`.
-    Note: a finetuned model will never use the saved activations.
 - `--lr`: learning rate. The default is `1e-3`.
 - `--epochs`: number of epochs to train the model. The default is `10`.
-- `--nosaved`: whether to use the saved activations or not. The default is `True`.
+- `--saved`: whether to use the saved activations or not. The default is `False`.

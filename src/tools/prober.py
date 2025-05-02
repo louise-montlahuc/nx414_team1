@@ -11,13 +11,75 @@ from models.linear_reg import linear_reg
 from models.ridge_reg import ridge_reg
 from models.mlp_reg import mlp_reg
 
-def linprob(model, args):
+def score(model, layer_name, args):
+    with torch.no_grad():
+        _, val_data = get_data()
+        stimulus_val, _, spikes_val = val_data
+        stimulus_val = torch.from_numpy(stimulus_val)
+        spikes_val = torch.from_numpy(spikes_val)
+
+        print('Computing activations...')
+        out = model(stimulus_val)
+
+        _compute_score(spikes_val, out, layer_name, args)
+        print('DONE!')
+
+def linprob(model, seed, args):
     """Linear probing of the model.
 
     Args:
         model (IModel): the model.
         args (argparse.Namespace): the arguments passed to the script.
     """
+    if args.finetune:
+        _linprob_finetuned(model, seed, args)
+    else:
+        _linprob(model, seed, args)
+
+def _linprob_finetuned(model, seed, args):
+    """
+    In this case, the finetuning is done after a given layer (in args). We thus need to probe
+    only the previous to last layer (last is MLP).
+    """
+    model.eval()
+    with torch.no_grad():
+        train_data, val_data = get_data()
+        stimulus_train, _, spikes_train = train_data
+        stimulus_train = torch.from_numpy(stimulus_train)
+        spikes_train = torch.from_numpy(spikes_train)
+        stimulus_val, _, spikes_val = val_data
+        stimulus_val = torch.from_numpy(stimulus_val)
+        spikes_val = torch.from_numpy(spikes_val)
+
+        print('Registering hooks...')
+        handles = model.register_hook(args.hook)
+        
+        model(stimulus_train)
+        activations = model.get_activations(args.hook)
+
+        print('\tLayer:', args.layer)
+        regression = fit(activations, spikes_train, method=args.probing, seed=seed)
+
+        # Test the regression on the validation set
+        print('Testing the regression...')
+        model.reset_activations()
+
+        model(stimulus_val)
+        activations = model.get_activations(args.hook)
+
+        ## Remove handles
+        for handle in handles:
+            handle.remove()
+        
+        print('\tLayer:', args.layer)
+        if isinstance(regression, tuple): # MLP returns both the model and the scaler
+            regression, scaler = regression
+            activations = scaler.transform(activations)
+        pred_activity = regression.predict(activations)
+        _compute_score(spikes_val, pred_activity, args.layer, args)
+        print('Done!')
+
+def _linprob(model, seed, args):
     model.eval()
     layer_regressions = dict()
 
@@ -46,7 +108,7 @@ def linprob(model, args):
         # Fit the regression on the activations of the training set
         print('Computing activations...')
         save_folder = os.path.join(os.getcwd(), 'saved')
-        if args.saved and not args.finetune and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt'):
+        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt'):
             print('Loading saved training activations...')
             activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt', weights_only=False)
         else:
@@ -57,13 +119,13 @@ def linprob(model, args):
         print('Fitting the regressions...')
         for layer_name, _ in model.get_layers():
             print('\tLayer:', layer_name)
-            layer_regressions[layer_name] = fit(activations[layer_name], spikes_train, method=args.probing)
+            layer_regressions[layer_name] = fit(activations[layer_name], spikes_train, method=args.probing, seed=seed)
 
         # Test the regression on the validation set
         print('Testing the regression...')
         model.reset_activations()
 
-        if args.saved and not args.finetune and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt'):
+        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt'):
             print('Loading saved validation activations...')
             activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt', weights_only=False)
         else:
@@ -81,24 +143,28 @@ def linprob(model, args):
                 regr, scaler = regr
                 activations[layer_name] = scaler.transform(activations[layer_name])
             pred_activity = regr.predict(activations[layer_name])
-            correlations = []
-            for i in range(spikes_val.shape[1]):
-                corr, _ = pearsonr(pred_activity[:, i], spikes_val[:, i])
-                correlations.append(corr)
-
-            # Compute mean R² score
-            r2 = r2_score(spikes_val, pred_activity)
-            name = f'{args.name}_{layer_name}' if not args.finetune else f'{args.name}_finetuned_{layer_name}'
-            new_score = {name: r2}
-            Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
-            Plotter.save_r2_table(
-                path_csv=f"{save_folder}/r2_scores.csv",
-                path_png=f"{save_folder}/r2_scores.png"
-            )
-
-            Plotter.save_corr_plot(
-                data=correlations,
-                title=f'[{args.name}/{args.hook}/{args.probing}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
-                path=f'{save_folder}/figures/{args.name}{"_finetuned" if args.finetune else ""}_{args.hook}_{args.probing}_correlation_{layer_name}.png'
-            )
+            _compute_score(spikes_val, pred_activity, layer_name, args)
         print('Done!')
+
+def _compute_score(y_true, y_pred, layer_name, args):
+    save_folder = os.path.join(os.getcwd(), 'saved')
+    correlations = []
+    for i in range(y_true.shape[1]):
+        corr, _ = pearsonr(y_pred[:, i], y_true[:, i])
+        correlations.append(corr)
+
+    # Compute mean R² score
+    r2 = r2_score(y_true, y_pred)
+    name = f'{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}'
+    new_score = {name: r2}
+    Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
+    Plotter.save_r2_table(
+        path_csv=f"{save_folder}/r2_scores.csv",
+        path_png=f"{save_folder}/r2_scores.png"
+    )
+
+    Plotter.save_corr_plot(
+        data=correlations,
+        title=f'[{args.name}/{args.probing if not args.finetune else "finetuned"}/{args.hook}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
+        path=f'{save_folder}/figures/corr_{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}.png'
+    )
