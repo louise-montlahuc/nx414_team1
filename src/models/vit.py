@@ -13,6 +13,9 @@ class ViT(IModel):
         """
         Returns the layers on which to do the linear probing.
         """
-        module_encoder = self.model.get_submodule("encoder")
-        module_heads = self.model.get_submodule("heads")
-        return [('encoder', module_encoder), ('heads', module_heads)]
+        layers = []
+        layers_name = [name for name, _ in self.model.named_children()]
+        for name in layers_name[-4:]:
+            module = self.model.get_submodule(name)
+            layers.append((name, module))
+        return layers 
