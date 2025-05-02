@@ -5,7 +5,7 @@ from models.build import MODEL_REGISTRY
 
 @MODEL_REGISTRY.register()
 class linear_reg(IModel):
-    def __init__(self):
+    def __init__(self, seed):
         super(linear_reg, self).__init__()
         self.model = LinearRegression()
         self.ACTs = {} 

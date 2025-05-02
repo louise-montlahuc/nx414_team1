@@ -2,12 +2,14 @@ import argparse
 
 import torch
 
+from utils.seed import set_seed
 from utils.utils import download_data
 from models.build import make_model
 from tools.trainer import finetune
 from tools.prober import linprob, score
 
 def main(args):
+    seed = set_seed()
     download_data('./data/') # Download the data if not already done
     model = make_model(args.name)
     if args.finetune:
@@ -19,7 +21,7 @@ def main(args):
         print(model)
 
     if not args.finetune or args.driven == 'task':
-        linprob(model, args)
+        linprob(model, seed, args)
     else:
         # No need to do probing, just pass through the model
         score(model, args.layer, args)

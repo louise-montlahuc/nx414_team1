@@ -16,6 +16,5 @@ class ResNeXt(IModel):
         layer3 = self.model.get_submodule("layer3")
         layer4 = self.model.get_submodule("layer4")
         avgpool = self.model.get_submodule("avgpool")
-        
         return [('layer3', layer3), ('layer4', layer4), ('avgpool', avgpool)]
         

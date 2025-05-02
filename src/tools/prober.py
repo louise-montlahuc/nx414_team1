@@ -24,7 +24,7 @@ def score(model, layer_name, args):
         _compute_score(spikes_val, out, layer_name, args)
         print('DONE!')
 
-def linprob(model, args):
+def linprob(model, seed, args):
     """Linear probing of the model.
 
     Args:
@@ -32,11 +32,11 @@ def linprob(model, args):
         args (argparse.Namespace): the arguments passed to the script.
     """
     if args.finetune:
-        _linprob_finetuned(model, args)
+        _linprob_finetuned(model, seed, args)
     else:
-        _linprob(model, args)
+        _linprob(model, seed, args)
 
-def _linprob_finetuned(model, args):
+def _linprob_finetuned(model, seed, args):
     """
     In this case, the finetuning is done after a given layer (in args). We thus need to probe
     only the previous to last layer (last is MLP).
@@ -58,7 +58,7 @@ def _linprob_finetuned(model, args):
         activations = model.get_activations(args.hook)
 
         print('\tLayer:', args.layer)
-        regression = fit(activations, spikes_train, method=args.probing)
+        regression = fit(activations, spikes_train, method=args.probing, seed=seed)
 
         # Test the regression on the validation set
         print('Testing the regression...')
@@ -79,7 +79,7 @@ def _linprob_finetuned(model, args):
         _compute_score(spikes_val, pred_activity, args.layer, args)
         print('Done!')
 
-def _linprob(model, args):
+def _linprob(model, seed, args):
     model.eval()
     layer_regressions = dict()
 
@@ -119,7 +119,7 @@ def _linprob(model, args):
         print('Fitting the regressions...')
         for layer_name, _ in model.get_layers():
             print('\tLayer:', layer_name)
-            layer_regressions[layer_name] = fit(activations[layer_name], spikes_train, method=args.probing)
+            layer_regressions[layer_name] = fit(activations[layer_name], spikes_train, method=args.probing, seed=seed)
 
         # Test the regression on the validation set
         print('Testing the regression...')

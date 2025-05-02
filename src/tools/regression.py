@@ -2,7 +2,7 @@ from sklearn.discriminant_analysis import StandardScaler
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.neural_network import MLPRegressor
 
-def fit(x, y, method):
+def fit(x, y, method, seed):
     """Fits a regression model to the activations of the model.
 
     Args:
@@ -20,9 +20,9 @@ def fit(x, y, method):
     if method == 'linear':
         return _fit_linear_regression(x, y)
     elif method == 'ridge':
-        return _fit_ridge_regression(x, y)
+        return _fit_ridge_regression(x, y, seed)
     elif method == 'mlp':
-        return _fit_mlp_regression(x, y)
+        return _fit_mlp_regression(x, y, seed)
     else:
         raise ValueError(f"Unknown method: {method}. Supported methods are 'linear', 'ridge', and 'mlp'.")
 
@@ -39,7 +39,7 @@ def _fit_linear_regression(x, y):
     linreg.fit(x, y)
     return linreg
         
-def _fit_ridge_regression(x, y):
+def _fit_ridge_regression(x, y, seed):
     """
     Fits a ridge regression model to the activations of the model.
     Args:
@@ -48,11 +48,11 @@ def _fit_ridge_regression(x, y):
     Returns:
         model: the fitted regression model, that possess the method `predict`.
     """
-    ridge = Ridge()
+    ridge = Ridge(random_state=seed)
     ridge.fit(x, y)
     return ridge
 
-def _fit_mlp_regression(x, y): # TODO MLP does not work at all, find out why
+def _fit_mlp_regression(x, y, seed): # TODO MLP does not work at all, find out why
     """
     Trains an MLP to fit the activations of the model.
     Args:
@@ -64,6 +64,6 @@ def _fit_mlp_regression(x, y): # TODO MLP does not work at all, find out why
     """
     scaler = StandardScaler()
     x_scaled = scaler.fit_transform(x)
-    mlp = MLPRegressor(hidden_layer_sizes=(64, 32), max_iter=200, early_stopping=True, verbose=True) # max_iter is the number of epochs
+    mlp = MLPRegressor(hidden_layer_sizes=(64, 32), max_iter=200, early_stopping=True, verbose=True, random_state=seed) # max_iter is the number of epochs
     mlp.fit(x_scaled, y)
     return mlp, scaler
