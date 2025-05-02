@@ -3,6 +3,7 @@ from torchvision.models import resnet18, ResNet18_Weights
 from models.IModel import IModel
 from models.build import MODEL_REGISTRY
 
+
 @MODEL_REGISTRY.register()
 class ResNet18(IModel):
     def __init__(self):
@@ -13,7 +14,11 @@ class ResNet18(IModel):
         """
         Returns the layers on which to do the linear probing.
         """
-        module_layer3 = self.model.get_submodule("layer3")
-        module_layer4 = self.model.get_submodule("layer4")
-        module_avgpool = self.model.get_submodule("avgpool")
-        return [('layer3', module_layer3), ('layer4', module_layer4), ('avgpool', module_avgpool)]
+        layers = []
+        layers_name = [name for name, _ in self.model.named_children()]
+        for name in layers_name[-4:]:
+            module = self.model.get_submodule(name)
+            layers.append((name, module))
+        return layers 
+    
+    

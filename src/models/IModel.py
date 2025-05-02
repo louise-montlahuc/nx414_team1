@@ -13,6 +13,7 @@ class IModel(ABC, nn.Module):
     def __init__(self):
         super().__init__()
         self.PCs = dict()
+        self.PCA = None
         self.ACTs = dict()
 
     def forward(self, images):
@@ -42,6 +43,7 @@ class IModel(ABC, nn.Module):
         activations = output.detach().cpu().numpy().reshape(output.shape[0], -1)
         print('Activations shape:', activations.shape)
         pca = PCA(n_components=1000)
+        print(pca.type())
         pca_features = pca.fit_transform(activations)
         print('Principal components shape:', pca_features.shape)
         self.PCs[layer_name] = pca_features
