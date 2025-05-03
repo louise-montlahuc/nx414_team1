@@ -13,8 +13,9 @@ class IModel(ABC, nn.Module):
     def __init__(self):
         super().__init__()
         self.PCs = dict()
-        self.PCA = None
         self.ACTs = dict()
+        self.PCA = dict()
+        self.pca_fitted = []
 
     def forward(self, images):
         return self.model(images)
@@ -29,6 +30,7 @@ class IModel(ABC, nn.Module):
             module = self.model.get_submodule(name)
             layers.append((name, module))
         return layers
+        
         
     def get_activations(self, hook_name):
         """
@@ -48,17 +50,28 @@ class IModel(ABC, nn.Module):
         """
         self.PCs = dict()
         self.ACTs = dict()
+        self.PCA = dict()
+        self.pca_fitted = []
 
     def _get_PCs_hook(self, module, input, output, layer_name):
         print('Layer:', layer_name)
         activations = output.detach().cpu().numpy().reshape(output.shape[0], -1)
         print('Activations shape:', activations.shape)
-        pca = PCA(n_components=1000)
-        print(pca.type())
-        self.PCA = pca
-        pca_features = pca.fit_transform(activations)
-        print('Principal components shape:', pca_features.shape)
-        self.PCs[layer_name] = pca_features
+        if activations.shape[1] > 1000:
+            if layer_name in self.pca_fitted:
+                pca_features = self.PCA[layer_name].transform(activations)
+                print('Principal components shape:', pca_features.shape)
+                self.PCs[layer_name] = pca_features
+            else:
+                pca = PCA(n_components=1000)
+                print(pca)
+                self.PCA[layer_name] = pca
+                pca_features = pca.fit_transform(activations)
+                self.pca_fitted.append(layer_name)
+                print('Principal components shape:', pca_features.shape)
+                self.PCs[layer_name] = pca_features
+            
+    
 
     def _get_activations_hook(self, module, input, output, layer_name):
         activations = output.detach().cpu().numpy().reshape(output.shape[0], -1)
