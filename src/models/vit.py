@@ -9,13 +9,3 @@ class ViT(IModel):
         super(ViT, self).__init__()
         self.model = vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
     
-    def get_layers(self):
-        """
-        Returns the layers on which to do the linear probing.
-        """
-        layers = []
-        layers_name = [name for name, _ in self.model.named_children()]
-        for name in layers_name[-4:]:
-            module = self.model.get_submodule(name)
-            layers.append((name, module))
-        return layers 

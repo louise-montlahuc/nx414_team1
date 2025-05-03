@@ -2,8 +2,8 @@ Model,Score
 linear_reg,-0.0374122746288776
 ridge_reg,-0.0374122746288776
 mlp_reg,-0.0374122746288776
-ConvNeXt_layer7,0.0381535105407238
-ConvNeXt_classifier,0.0381535105407238
+ConvNeXt_layer7,0.0381530001759529
+ConvNeXt_classifier,0.0381530001759529
 ResNeXt_layer3,0.3907896280288696
 ResNeXt_layer4,0.1991739720106125
 ResNeXt_avgpool,-1.9893754720687864
@@ -16,3 +16,15 @@ ResNet18_layer4,-5.970043730485486e-06
 ResNet18_avgpool,0.1899793744087219
 ResNet50_layer4,0.2294809967279434
 ResNet50_avgpool,-1.9582560062408447
+ViT_pretrained_conv_proj_linear_all,-0.9188361167907716
+ViT_pretrained_encoder_linear_all,0.3059433996677398
+ViT_pretrained_heads_linear_all,0.119337297976017
+ConvNeXt_pretrained_layer7_linear_all,0.0381535105407238
+ConvNeXt_pretrained_classifier_linear_all,0.0381535105407238
+ResNeXt_pretrained_layer3_linear_all,0.3907896280288696
+ResNeXt_pretrained_layer4_linear_all,0.1991739720106125
+ResNeXt_pretrained_avgpool_linear_all,-1.9893754720687864
+ResNeXt_pretrained_fc_linear_all,-0.0489829331636428
+DinoV2_pretrained_block10_linear_all,0.307599127292633
+DinoV2_pretrained_block11_linear_all,0.3066456913948059
+DinoV2_pretrained_norm_linear_all,0.31949684023857117

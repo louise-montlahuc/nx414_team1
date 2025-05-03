@@ -12,8 +12,9 @@ class ConvNeXt(IModel):
     def get_layers(self):
         """
         Returns the layers on which to do the linear probing.
-        """
+        """    
         layer7 = self.model.get_submodule("features.7")
-        avgpool = self.model.get_submodule("avgpool")
+        # avgpool = self.model.get_submodule("avgpool") 
         classif = self.model.get_submodule("classifier")
-        return [('avgpool', avgpool), ('layer7', layer7), ('classifier', classif)]
+        return [('layer7', layer7), ('classifier', classif)]
+        # return [('avgpool', avgpool), ('layer7', layer7), ('classifier', classif)]
