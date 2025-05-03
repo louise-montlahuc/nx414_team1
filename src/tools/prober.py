@@ -2,6 +2,7 @@ import os
 import torch
 from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
+from sklearn.decomposition import PCA
 
 from tools.dataloader import get_data
 from tools.regression import fit
@@ -17,6 +18,10 @@ def score(model, layer_name, args):
         stimulus_val, _, spikes_val = val_data
         stimulus_val = torch.from_numpy(stimulus_val)
         spikes_val = torch.from_numpy(spikes_val)
+
+        if args.pca:
+            pca = PCA(n_components=1000)
+            stimulus_val = pca.transform(stimulus_val)
 
         print('Computing activations...')
         out = model(stimulus_val)
@@ -51,6 +56,15 @@ def _linprob_finetuned(model, seed, args):
         stimulus_val = torch.from_numpy(stimulus_val)
         spikes_val = torch.from_numpy(spikes_val)
 
+        if args.pca:
+            pca = PCA(n_components=1000)
+            stimulus_train_flat = stimulus_train.reshape(stimulus_train.shape[0], -1)
+            stimulus_val_flat = stimulus_val.reshape(stimulus_val.shape[0], -1)
+            stimulus_train_pca = pca.fit_transform(stimulus_train_flat)
+            stimulus_val_pca = pca.transform(stimulus_val_flat)
+            stimulus_train = stimulus_train_pca.reshape(stimulus_train.shape)
+            stimulus_val = stimulus_val_pca.reshape(stimulus_val.shape)
+
         print('Registering hooks...')
         handles = model.register_hook(args.hook)
         
@@ -82,6 +96,7 @@ def _linprob_finetuned(model, seed, args):
 def _linprob(model, seed, args):
     model.eval()
     layer_regressions = dict()
+    save_folder = os.path.join(os.getcwd(), 'saved')
 
     with torch.no_grad():
         train_data, val_data = get_data()
@@ -92,46 +107,64 @@ def _linprob(model, seed, args):
         stimulus_val = torch.from_numpy(stimulus_val)
         spikes_val = torch.from_numpy(spikes_val)
 
-        print('Registering hooks...')
-        handles = model.register_hook(args.hook)
+        if args.pca:
+            pca = PCA(n_components=1000)
+            stimulus_train_flat = stimulus_train.reshape(stimulus_train.shape[0], -1)
+            stimulus_val_flat = stimulus_val.reshape(stimulus_val.shape[0], -1)
+            stimulus_train_pca = pca.fit_transform(stimulus_train_flat)
+            stimulus_val_pca = pca.transform(stimulus_val_flat)
+            #stimulus_train = stimulus_train_pca.reshape(stimulus_train.shape)
+            #stimulus_val = stimulus_val_pca.reshape(stimulus_val.shape)
 
-        # If linear regression model, ensure it is fitted 
         if isinstance(model, (linear_reg, ridge_reg, mlp_reg)):
+            handles = []
+            # Reshaping data
             print('Fitting the linear regression model...')
             n_stimulus = stimulus_train.shape[0]
-            stimulus_train = stimulus_train.reshape(n_stimulus, -1)
-            model.fit(stimulus_train, spikes_train)  
+            stimulus_train = stimulus_train.reshape(n_stimulus, -1) 
 
             n_stimulus_val = stimulus_val.shape[0]
             stimulus_val = stimulus_val.reshape(n_stimulus_val, -1)
-        
-        # Fit the regression on the activations of the training set
-        print('Computing activations...')
-        save_folder = os.path.join(os.getcwd(), 'saved')
-        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt'):
-            print('Loading saved training activations...')
-            activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt', weights_only=False)
         else:
+            print('Registering hooks...')
+            handles = model.register_hook(args.hook)
+        
+        if isinstance(model, (linear_reg, ridge_reg, mlp_reg)):
+            model.fit(stimulus_train, spikes_train)  
             model(stimulus_train)
             activations = model.get_activations(args.hook)
-            torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}_train_activations.pt')
+        else:
+            # Fit the regression on the activations of the training set
+            print('Computing activations...')
+            save_folder = os.path.join(os.getcwd(), 'saved')
+            if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_train_activations.pt'):
+                print('Loading saved training activations...')
+                activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_train_activations.pt', weights_only=False)
+            else:
+                model(stimulus_train)
+                activations = model.get_activations(args.hook)
+                torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_train_activations.pt')
 
         print('Fitting the regressions...')
-        for layer_name, _ in model.get_layers():
-            print('\tLayer:', layer_name)
-            layer_regressions[layer_name] = fit(activations[layer_name], spikes_train, method=args.probing, seed=seed)
+        if isinstance(model, (linear_reg, ridge_reg, mlp_reg)):
+            for layer_name, _ in model.get_layers():
+                layer_regressions[layer_name] = model
+        else:
+            for layer_name, _ in model.get_layers():
+                print('\tLayer:', layer_name)
+                layer_regressions[layer_name] = fit(activations[layer_name], spikes_train, method=args.probing, seed=seed)
 
         # Test the regression on the validation set
         print('Testing the regression...')
         model.reset_activations()
 
-        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt'):
+        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_valid_activations.pt'):
             print('Loading saved validation activations...')
-            activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt', weights_only=False)
+            activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_valid_activations.pt', weights_only=False)
         else:
             model(stimulus_val)
             activations = model.get_activations(args.hook)
-            torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}_valid_activations.pt')
+            torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_valid_activations.pt')
 
         ## Remove handles
         for handle in handles:
@@ -155,7 +188,7 @@ def _compute_score(y_true, y_pred, layer_name, args):
 
     # Compute mean R² score
     r2 = r2_score(y_true, y_pred)
-    name = f'{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}'
+    name = f'{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}_{"pca" if args.pca else ""}'
     new_score = {name: r2}
     Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
     Plotter.save_r2_table(
@@ -166,5 +199,5 @@ def _compute_score(y_true, y_pred, layer_name, args):
     Plotter.save_corr_plot(
         data=correlations,
         title=f'[{args.name}/{args.probing if not args.finetune else "finetuned"}/{args.hook}]\nCorrelation between predicted and actual spikes for layer {layer_name}',
-        path=f'{save_folder}/figures/corr_{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}.png'
+        path=f'{save_folder}/figures/corr_{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}_{"pca" if args.pca else ""}.png'
     )

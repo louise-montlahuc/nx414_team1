@@ -1,3 +1,4 @@
+import torch
 from sklearn.linear_model import Ridge
 
 from models.IModel import IModel
@@ -18,6 +19,11 @@ class ridge_reg(IModel):
         """ Fit the regression model using the provided method """
         self.model.fit(x, y)
         return self.model
+    
+    def predict(self, X):
+        self.eval()
+        with torch.no_grad():
+            return self(X)
     
     def get_layers(self):
         return [('ridge_regression', None)]

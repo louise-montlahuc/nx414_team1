@@ -1,7 +1,4 @@
 Model,Score
-linear_reg,-0.0374122746288776
-ridge_reg,-0.0374122746288776
-mlp_reg,-0.0374122746288776
 ConvNeXt_layer7,0.0381530001759529
 ConvNeXt_classifier,0.0381530001759529
 ResNeXt_layer3,0.3907896280288696
@@ -10,8 +7,6 @@ ResNeXt_avgpool,-1.9893754720687864
 DinoV2_norm,0.3194968402385711
 ViT_encoder,0.3059268891811371
 ViT_heads,0.1193372532725334
-ConvNeXt_layer7,0.0381530001759529
-ConvNeXt_classifier,0.0381530001759529
 ResNet18_pretrained_layer3_linear_all,0.2670033276081085
 ResNet18_pretrained_layer4_linear_all,-5.970043730485486e-06
 ResNet18_pretrained_avgpool_linear_all,0.1899793744087219
@@ -23,7 +18,7 @@ ResNet50_pretrained_layer4_linear_all,0.2294809967279434
 ResNet50_pretrained_avgpool_linear_all,-1.9582560062408447
 ResNet50_pretrained_layer3_ridge_all,0.3692589402198791
 ResNet50_pretrained_layer4_ridge_all,0.2295205891132354
-ResNet50_pretrained_avgpool_ridge_all,-0.28831398487091064
+ResNet50_pretrained_avgpool_ridge_all,-0.2883139848709106
 ViT_pretrained_conv_proj_linear_all,-0.9188361167907716
 ViT_pretrained_encoder_linear_all,0.3059433996677398
 ViT_pretrained_heads_linear_all,0.119337297976017
@@ -35,4 +30,13 @@ ResNeXt_pretrained_avgpool_linear_all,-1.9893754720687864
 ResNeXt_pretrained_fc_linear_all,-0.0489829331636428
 DinoV2_pretrained_block10_linear_all,0.307599127292633
 DinoV2_pretrained_block11_linear_all,0.3066456913948059
-DinoV2_pretrained_norm_linear_all,0.31949684023857117
+DinoV2_pretrained_norm_linear_all,0.3194968402385711
+linear_reg_pretrained_linear_regression_linear_all,-0.0374122746288776
+ridge_reg_pretrained_ridge_regression_linear_all,-1.1671054072402829
+mlp_reg_pretrained_mlp_regression_linear_all,-0.0643526334032114
+linear_reg_pretrained_linear_regression_linear_all_pca,-0.0374122746288776
+ridge_reg_pretrained_ridge_regression_linear_all_pca,-1.1671054072402829
+ResNet18_pretrained_layer3_linear_all_pca,0.2669950723648071
+ResNet18_pretrained_layer4_linear_all_pca,-1.2538263035821728e-05
+ResNet18_pretrained_avgpool_linear_all_pca,0.1899791061878204
+ResNet18_pretrained_fc_linear_all_pca,0.18997876346111298
