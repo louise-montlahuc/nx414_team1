@@ -70,6 +70,8 @@ class IModel(ABC, nn.Module):
                 self.pca_fitted.append(layer_name)
                 print('Principal components shape:', pca_features.shape)
                 self.PCs[layer_name] = pca_features
+        else:
+            self.PCs[layer_name] = activations
             
     
 
