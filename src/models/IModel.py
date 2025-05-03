@@ -57,7 +57,7 @@ class IModel(ABC, nn.Module):
         print('Layer:', layer_name)
         activations = output.detach().cpu().numpy().reshape(output.shape[0], -1)
         print('Activations shape:', activations.shape)
-        if activations.shape[1] > 1000:
+        if min(activations.shape) > 1000:
             if layer_name in self.pca_fitted:
                 pca_features = self.PCA[layer_name].transform(activations)
                 print('Principal components shape:', pca_features.shape)
