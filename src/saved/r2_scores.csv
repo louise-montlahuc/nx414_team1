@@ -1,4 +1,17 @@
 Model,Score
+linear_reg,-0.0374122746288776
+ridge_reg,-0.0374122746288776
+mlp_reg,-0.0374122746288776
+ConvNeXt_layer7,0.0381530001759529
+ConvNeXt_classifier,0.0381530001759529
+ResNeXt_layer3,0.3907896280288696
+ResNeXt_layer4,0.1991739720106125
+ResNeXt_avgpool,-1.9893754720687864
+DinoV2_norm,0.3194968402385711
+ViT_encoder,0.3059268891811371
+ViT_heads,0.1193372532725334
+ConvNeXt_layer7,0.0381530001759529
+ConvNeXt_classifier,0.0381530001759529
 ResNet18_pretrained_layer3_linear_all,0.2670033276081085
 ResNet18_pretrained_layer4_linear_all,-5.970043730485486e-06
 ResNet18_pretrained_avgpool_linear_all,0.1899793744087219

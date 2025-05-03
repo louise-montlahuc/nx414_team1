@@ -18,6 +18,17 @@ class IModel(ABC, nn.Module):
 
     def forward(self, images):
         return self.model(images)
+    
+    def get_layers(self):
+        """
+        Returns the layers on which to do the linear probing.
+        """
+        layers = []
+        layers_name = [name for name, _ in self.model.named_children()]
+        for name in layers_name[-4:]:
+            module = self.model.get_submodule(name)
+            layers.append((name, module))
+        return layers
         
     def get_activations(self, hook_name):
         """
@@ -44,6 +55,7 @@ class IModel(ABC, nn.Module):
         print('Activations shape:', activations.shape)
         pca = PCA(n_components=1000)
         print(pca.type())
+        self.PCA = pca
         pca_features = pca.fit_transform(activations)
         print('Principal components shape:', pca_features.shape)
         self.PCs[layer_name] = pca_features
@@ -72,13 +84,6 @@ class IModel(ABC, nn.Module):
         """
         return ModifiedModel(self.model, layer, num_classes)
 
-    @abstractmethod
-    def get_layers(self):
-        """
-        Returns the layers of the model.
-        By default, it returns the last layer of the model.
-        """
-        raise NotImplementedError("This method should be overridden by subclasses.")
 
 class ModifiedModel(IModel):
     def __init__(self, base_model, insert_after, num_classes):
