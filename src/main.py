@@ -38,5 +38,6 @@ if __name__ == '__main__':
     parser.add_argument('--lr', default=1e-5, help='Learning rate for finetuning', type=float)
     parser.add_argument('--epochs', default=10, help='Number of epochs for finetuning', type=int)
     parser.add_argument('--saved', action='store_true', help='Use saved activations, if any. Default is to not use them')
+    parser.add_argument('--pca', default='True', help='whether or not to perform PCA', type=bool)
     args = parser.parse_args()
     main(args)

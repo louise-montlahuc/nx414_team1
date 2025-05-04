@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -60,15 +61,31 @@ class Plotter():
         # Fill NaN values with 0 and round R² scores
         df["Score"] = pd.to_numeric(df["Score"], errors='coerce').fillna(0).round(4)
 
+        # Sort by Score descending
+        df = df.sort_values(by="Score", ascending=False).reset_index(drop=True)
+
         # Highest) R² score in bold
         best_idx = df["Score"].idxmax()
         df["Score"] = df["Score"].astype(str)  # Ensure the column is in string format
         df.loc[best_idx, "Score"] = f"$\\bf{{{df.loc[best_idx, 'Score']}}}$"  # LaTeX bold formatting
 
+        # Arrange the name
+        names = df["Model"].tolist()
+        for i in range(len(names)):
+            names[i] = names[i].replace("_", " ") 
+            names[i] = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', names[i]) # Separate letters and digits
+            names[i] = re.sub(r'\b(all)\b', '', names[i], flags=re.IGNORECASE) # Remove 'all'
+            names[i] = re.sub(r'\s+', ' ', names[i]).strip()
+        df["Model"] = names
+
+    
         # Plot the table
-        fig, ax = plt.subplots(figsize=(8, len(df) * 0.5 + 1))
+        row_height = 0.4  
+        fig_height = len(df) * row_height + 1  
+        fig, ax = plt.subplots(figsize=(8, fig_height))
         ax.axis('tight')
         ax.axis('off')
+
         table = ax.table(
             cellText=df.values,
             colLabels=df.columns,
@@ -83,15 +100,15 @@ class Plotter():
                 cell.set_facecolor(header_color)
             elif col == 0:
                 cell.set_facecolor(header_color)
-
-            cell.set_height(0.1)
+            cell.set_height(0.05)
+            cell.set_width(0.9)
             cell.set_fontsize(12)
 
-        fig.tight_layout()
+        plt.tight_layout()
 
         if not os.path.exists(os.path.dirname(path_png)):
             os.makedirs(os.path.dirname(path_png))
-        plt.savefig(path_png)
+        plt.savefig(path_png, bbox_inches='tight')
         plt.close()
 
     @staticmethod

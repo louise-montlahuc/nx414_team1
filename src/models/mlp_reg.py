@@ -1,3 +1,4 @@
+import torch
 from sklearn.neural_network import MLPRegressor
 from sklearn.discriminant_analysis import StandardScaler
 
@@ -21,6 +22,11 @@ class mlp_reg(IModel):
         x_scaled = scaler.fit_transform(x)
         self.model.fit(x_scaled, y)
         return self.model
+    
+    def predict(self, X):
+        self.eval()
+        with torch.no_grad():
+            return self(X)
     
     def get_layers(self):
         return [('mlp_regression', None)]
