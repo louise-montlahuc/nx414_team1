@@ -23,7 +23,7 @@
 % The data used in this project comes from DiCarlo \textit{et al.} (2015) \cite{Majaj2015}, where they recorded neural activity from the inferior temporal (IT) cortex from non-human primates while showing them images. The data consists of the stimuli images and the corresponding average firing rate (from 70 to 170 ms) per each 168 recorded IT neurons.
 
 \section{Regression on stimuli}
-Before trying complex models, we analysed the possibility of predicting neural activity directly from pixels. BLABLA. The results are presented in Table \ref{table:regression}.
+Before trying complex models, we analysed the possibility of predicting neural activity directly from pixels. We use two simple family of models: linear regression and ridge regression. Due to the high-dimensional space of images, we also compute the result of those models after using PCA on the images, retaining the first 1000 principal components (PC). Note that we start by normalizing the images. The results are presented in Table \ref{table:regression}.
 
 \begin{table}[h!]
     \centering
@@ -31,10 +31,12 @@ Before trying complex models, we analysed the possibility of predicting neural a
         \hline
         Regression & Param. & \(R^2\) on train & \(R^2\) on valid. \\
         \hline
-        Linear & - & 0.355 & -0.037 \\
-        Linear & PCA & ? & ? \\
-        Ridge & \(\alpha=1\) & 0.999 & -1.167 \\
-        Ridge & PCA, \(\alpha=1\) & ? & ? \\
+        Linear & - & 0.384 & -0.041 \\
+        Linear & PCA & 0.466 & -0.082 \\
+        Ridge & \(\alpha=1\) & 0.999 & -0.929\\
+        Ridge & PCA, \(\alpha=1\) & 0.466 & -0.082 \\
+        Ridge & \(\alpha=\alpha_0\) & 0.168 & 0.087 \\
+        Ridge & PCA, \(\alpha=\alpha_0\) & 0.159 & 0.086 \\
         \hline
     \end{tabular}
     \caption{Results when doing regression on the stimuli (pixels)}
@@ -42,12 +44,12 @@ Before trying complex models, we analysed the possibility of predicting neural a
 \end{table}
 \vspace{-1.5em}
 
-We observe that there is a clear overfitting of these methods on the training data, leading to an overall bad generalisation and hence bad scores on the validation set.
+We obtain \(\alpha_0 \approx 615848\) by doing a grid search while keeping the same distribution of classes between the train and validation set. There is a clear overfitting of these methods on the training data, leading to an overall bad generalisation and hence bad scores on the validation set.
 
 \section{Regression on pretrained networks}
 To obtain better scores, we then try to predict the neural activity with a task-driven modeling approach. The hypothesis is that training a network to perform relevant behavioral task makes it learn representations that resemble those of the brain. Our selection of models is inspired by the leaderboard of Brain-Score \cite{SchrimpfKubilius2018BrainScore, Schrimpf2020integrative}. We chose six models, including some of the best performing ones, also taking into account the limited compute ressources at disposal: ResNet-18, ResNet-50 \cite{ResNet}, ConvNeXt (base) \cite{ConvNeXt}, ViT (base) \cite{ViT}, ResNeXt-50 \cite{ResNeXt} and DinoV2 \cite{DinoV2}\footnote{Thanks to the teaching team for this recommandation}.
 
-For each model, we select the last three layers and save the activations when we pass the images through the model. We perform three types of probing on the activations in order to predict the IT neural activity: a simple linear regression, a ridge regression and a two-layers MLP. Table \ref{table:pretrained} lists the best \(R^2\) score on the validation data per model, indicating which layer and probing method yield this score.
+For each model, we select the last three layers (before the fully connected head) and save the activations when we pass the images through the model. We perform three types of probing on the activations in order to predict the IT neural activity: a simple linear regression, a ridge regression and a two-layers MLP. Table \ref{table:pretrained} lists the best \(R^2\) score on the validation data per model, indicating which layer and probing method yield this score.
 
 \begin{table}[h!]
     \centering
@@ -60,12 +62,13 @@ For each model, we select the last three layers and save the activations when we
         ResNeXt & layer3 & Ridge & 0.391 \\
         ConvNeXt & layer7 & Ridge & 0.199 \\
         ViT & encoder & Ridge & 0.306 \\
-        DinoV2 & ? & ? & ? \\
+        DinoV2 & norm & Ridge & 0.319 \\
         \hline
     \end{tabular}
     \caption{Best result of probing pretrained layers}
     \label{table:pretrained}
 \end{table}
+\vspace*{-1.5em}
 
 The decision of selecting the last three layers of each model was made after an analysis of the distribution of the explained variance per neuron with respect to the layer of a pretrained ResNet-50 network. Figure \ref{fig:explvar} clearly shows that the explained variance distribution improves as the depth of the model increases.
 
@@ -76,6 +79,7 @@ The decision of selecting the last three layers of each model was made after an 
     \label{fig:explvar}
 \end{figure}
 \FloatBarrier
+\vspace*{-1.5em}
 
 \section{Finetuning pretrained models}
 The previous results indicate that ResNet-50 and ResNeXt are good candidates for finding the best model. Taking these models as backbone, we finetune them either I) a task-driven task (classify objects in images) or II) a data-driven task (regress neural activity given images). Specifically, we cut the network after a given layer and add either a classification or regression head. After experimenting with various training scheme and heads, we found our best result with an \(R^2\) score of 0.45 using a data-driven approach. The backbone is given by ResNeXt-50 cut before layer 4, with a two-layers MLP preceded by an adaptive average pooling \cite{AdaptiveAvgPool}. The training scheme consists of 30 epochs with a linear learning rate warmup during the first 5 epochs up to \(10^{-6}\) followed by a cosine annealing scheduler down to 0.
