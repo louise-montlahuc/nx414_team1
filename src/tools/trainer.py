@@ -90,7 +90,7 @@ def do_train(model, train_loader, val_loader, optim, criterion, scheduler, epoch
             r2 = r2_score(all_targets, all_preds)
             r2s.append(r2)
 
-        print(f'Validation Loss: {valid_loss:.4f}{"| R^2 score: {r2:.4f}" if args.driven == "data" else ""}')
+        print(f'Validation Loss: {valid_loss:.4f}{f"| R^2 score: {r2:.4f}" if args.driven == "data" else ""}')
 
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
