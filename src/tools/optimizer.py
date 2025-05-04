@@ -8,8 +8,8 @@ def make_optimizer(name, model, lr, weight_decay):
 
     if name == 'adamw':
         return torch.optim.AdamW([
-            {'params': base_params, 'lr': 0.1 * lr, 'weight_decay': weight_decay},
-            {'params': classif_params, 'lr': lr, 'weight_decay': 10 * weight_decay}
+            {'params': base_params, 'lr': 0.1 * lr},
+            {'params': classif_params, 'lr': lr}
         ], weight_decay=weight_decay)
     elif name == 'sgd':
         return torch.optim.SGD([

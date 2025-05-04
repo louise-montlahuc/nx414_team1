@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
 import torch
 from torch import nn
@@ -95,27 +95,50 @@ class ModifiedModel(IModel):
         # Extract layers up to the insertion point
         self.features = nn.Sequential()
         for name, module in base_model.named_children():
-            self.features.add_module(name, module)
-            if name == insert_after:
-                self.layer = (name, module)
+            if isinstance(module, nn.ModuleList):
+                for subname, submodule in module.named_children():
+                    self.features.add_module(subname, submodule)
+                    if f'{name}.{subname}' == insert_after:
+                        self.layer = (name, module)
+                        break
+                else:
+                    continue
                 break
+            else:
+                self.features.add_module(name, module)
+                if name == insert_after:
+                    self.layer = (name, module)
+                    break
+
+        # TODO testing freezing the layers
+        # for param in self.features.parameters():
+        #     param.requires_grad = False
 
         # Determine input dim for new head
         dummy_input = torch.randn(1, 3, 224, 224)
         with torch.no_grad():
-            out = self._forward_features(dummy_input)
-        out = out.view(out.size(0), -1)
-        head_in_features = out.shape[1]
+            features = self._forward_features(dummy_input)
+            pooled = nn.AdaptiveAvgPool2d((16, 16))(features)
+            flat = pooled.view(pooled.size(0), -1)
+            head_in_features = flat.shape[1]  
 
         # Define new head (classification or regression)
         self.fc = nn.Sequential(
+            nn.AdaptiveAvgPool2d((16, 16)),
             nn.Flatten(),
-            nn.Linear(head_in_features, num_classes)
+            nn.Linear(head_in_features, 1024),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(1024, num_classes)
         )
 
     def _forward_features(self, x):
         for name, module in self.features.named_children():
-            x = module(x)
+            if isinstance(module, nn.ModuleList):
+                for submodule in module:
+                    x = submodule(x)
+            else:
+                x = module(x)
         return x
 
     def forward(self, x):

@@ -29,7 +29,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--name', default='ResNet18', help='Model name', type=str)
-    parser.add_argument('-f', '--finetune', action='store_true', help='Whether to finetune the model')
+    parser.add_argument('-f', '--finetune', action='store_true', help='Whether to finetune the model or use as is')
     parser.add_argument('-d', '--driven', default='data', help='Data- or task-driven finetuning', type=str)
     parser.add_argument('-k', '--hook', default='all', help='Hook name', type=str)
     parser.add_argument('-p', '--probing', default='linear', help='Probing method (only for task-driven)', type=str)

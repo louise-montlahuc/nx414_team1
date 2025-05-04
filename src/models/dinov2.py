@@ -16,4 +16,5 @@ class DinoV2(IModel):
         # module_block10 = self.model.get_submodule("blocks.10")
         module_block11 = self.model.get_submodule("blocks.11")
         module_norm = self.model.get_submodule("norm")
-        return [('block10', module_block10), ('block11', module_block11), ('norm', module_norm)]
+        return [('block11', module_block11), ('norm', module_norm)]
+        # return [('block10', module_block10), ('block11', module_block11), ('norm', module_norm)]
