@@ -19,7 +19,7 @@ class IModel(ABC, nn.Module):
     def forward(self, images):
         return self.model(images)
     
-    def get_layers(self):
+    def get_layers(self, driven):
         """
         Returns the layers on which to do the linear probing.
         """
@@ -64,13 +64,13 @@ class IModel(ABC, nn.Module):
         activations = output.detach().cpu().numpy().reshape(output.shape[0], -1)
         self.ACTs[layer_name] = activations
     
-    def register_hook(self, hook_name):
+    def register_hook(self, hook_name, driven):
         """
         Registers a hook to the model.
         The hook can be 'all' for all activations or 'pca' for 1000 principal components.
         """
         handles = []
-        for name, layer in self.get_layers():
+        for name, layer in self.get_layers(driven):
             if hook_name == 'all':
                 handle = layer.register_forward_hook(lambda m, i, o, n=name: self._get_activations_hook(m, i, o, n))
             elif hook_name == 'pca':
@@ -88,9 +88,11 @@ class IModel(ABC, nn.Module):
 class ModifiedModel(IModel):
     def __init__(self, base_model, insert_after, num_classes):
         super().__init__()
+        self.model = base_model
         self.base_model = base_model
         self.insert_after = insert_after
         self.num_classes = num_classes
+        self.layer_name = insert_after
 
         # Extract layers up to the insertion point
         self.features = nn.Sequential()
@@ -109,10 +111,6 @@ class ModifiedModel(IModel):
                 if name == insert_after:
                     self.layer = (name, module)
                     break
-
-        # TODO testing freezing the layers
-        # for param in self.features.parameters():
-        #     param.requires_grad = False
 
         # Determine input dim for new head
         dummy_input = torch.randn(1, 3, 224, 224)
@@ -146,5 +144,8 @@ class ModifiedModel(IModel):
         x = self.fc(x)
         return x
     
-    def get_layers(self):
-        return self.layer
+    def get_layers(self, driven):
+        if driven == 'data':
+            return [(self.layer_name, self.layer)]
+
+        return super().get_layers(driven)

@@ -125,10 +125,12 @@ class Plotter():
             model_name (str): Name of the model.
             layer_name (str): Name of the layer.
         """
-        plt.figure(figsize=(18, 5))
+        nb_plots = 2 if len(r2_scores) == 0 else 3
+
+        plt.figure(figsize=(6 * nb_plots, 5))
 
         # Plot training and validation loss
-        plt.subplot(1, 3, 1)
+        plt.subplot(1, nb_plots, 1)
         plt.plot(range(1, epochs + 1), train_losses, label='Train Loss', color='blue')
         plt.plot(range(1, epochs + 1), valid_losses, label='Validation Loss', color='orange')
         plt.xlabel('Epochs')
@@ -137,20 +139,21 @@ class Plotter():
         plt.legend()
 
         # Plot learning rate
-        plt.subplot(1, 3, 2)
+        plt.subplot(1, nb_plots, 2)
         plt.plot(range(1, epochs + 1), lrs, label='Learning Rate', color='green')
         plt.xlabel('Epochs')
         plt.ylabel('Learning Rate')
         plt.title(f'{model_name} - Learning Rate Schedule')
         plt.legend()
 
-        # Plot R² scores
-        plt.subplot(1, 3, 3)
-        plt.plot(range(1, epochs + 1), r2_scores, label=r'$R^2$', color='green')
-        plt.xlabel('Epochs')
-        plt.ylabel(r'$R^2$')
-        plt.title(f'{model_name} - R² Score')
-        plt.legend()
+        if len(r2_scores) > 0:
+            # Plot R² scores
+            plt.subplot(1, 3, 3)
+            plt.plot(range(1, epochs + 1), r2_scores, label=r'$R^2$', color='green')
+            plt.xlabel('Epochs')
+            plt.ylabel(r'$R^2$')
+            plt.title(f'{model_name} - R² Score')
+            plt.legend()
 
         if not os.path.exists(os.path.dirname('./saved/plots/')):
             os.makedirs(os.path.dirname('./saved/plots/'))

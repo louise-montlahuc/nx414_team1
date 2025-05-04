@@ -36,7 +36,7 @@ def linprob(model, seed, args):
         model (IModel): the model.
         args (argparse.Namespace): the arguments passed to the script.
     """
-    if args.finetune:
+    if args.driven == 'data' and args.finetune:
         _linprob_finetuned(model, seed, args)
     else:
         _linprob(model, seed, args)
@@ -66,8 +66,9 @@ def _linprob_finetuned(model, seed, args):
             stimulus_val = stimulus_val_pca.reshape(stimulus_val.shape)
 
         print('Registering hooks...')
-        handles = model.register_hook(args.hook)
+        handles = model.register_hook(args.hook, args.driven)
         
+        print('Computing activations...')
         model(stimulus_train)
         activations = model.get_activations(args.hook)
 
@@ -127,7 +128,7 @@ def _linprob(model, seed, args):
             stimulus_val = stimulus_val.reshape(n_stimulus_val, -1)
         else:
             print('Registering hooks...')
-            handles = model.register_hook(args.hook)
+            handles = model.register_hook(args.hook, args.driven)
         
         if isinstance(model, (linear_reg, ridge_reg, mlp_reg)):
             model.fit(stimulus_train, spikes_train)  
@@ -147,10 +148,10 @@ def _linprob(model, seed, args):
 
         print('Fitting the regressions...')
         if isinstance(model, (linear_reg, ridge_reg, mlp_reg)):
-            for layer_name, _ in model.get_layers():
+            for layer_name, _ in model.get_layers(args.driven):
                 layer_regressions[layer_name] = model
         else:
-            for layer_name, _ in model.get_layers():
+            for layer_name, _ in model.get_layers(args.driven):
                 print('\tLayer:', layer_name)
                 layer_regressions[layer_name] = fit(activations[layer_name], spikes_train, method=args.probing, seed=seed)
 

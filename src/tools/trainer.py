@@ -83,13 +83,14 @@ def do_train(model, train_loader, val_loader, optim, criterion, scheduler, epoch
 
         valid_loss /= len(val_loader.dataset)
 
-        # Stack all batches to compute R2
-        all_preds = torch.cat(all_preds).numpy()
-        all_targets = torch.cat(all_targets).numpy()
-        r2 = r2_score(all_targets, all_preds)
-        r2s.append(r2)
+        if args.driven == 'data':
+            # Stack all batches to compute R2
+            all_preds = torch.cat(all_preds).numpy()
+            all_targets = torch.cat(all_targets).numpy()
+            r2 = r2_score(all_targets, all_preds)
+            r2s.append(r2)
 
-        print(f'Validation Loss: {valid_loss:.4f} | R^2 score: {r2:.4f}')
+        print(f'Validation Loss: {valid_loss:.4f}{"| R^2 score: {r2:.4f}" if args.driven == "data" else ""}')
 
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss

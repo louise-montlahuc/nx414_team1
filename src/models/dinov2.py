@@ -9,7 +9,7 @@ class DinoV2(IModel):
         super(DinoV2, self).__init__()
         self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
     
-    def get_layers(self):
+    def get_layers(self, driven):
         """
         Returns the layers on which to do the linear probing.
         """
