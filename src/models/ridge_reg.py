@@ -8,7 +8,7 @@ from models.build import MODEL_REGISTRY
 class ridge_reg(IModel):
     def __init__(self, seed):
         super(ridge_reg, self).__init__()
-        self.model = Ridge(alpha=1.0, solver='svd', random_state=seed)
+        self.model = Ridge(alpha=1.0, random_state=seed)
         self.ACTs = {} 
 
     def forward(self, images):

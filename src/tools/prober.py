@@ -137,13 +137,13 @@ def _linprob(model, seed, args):
             # Fit the regression on the activations of the training set
             print('Computing activations...')
             save_folder = os.path.join(os.getcwd(), 'saved')
-            if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_train_activations.pt'):
+            if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}{"_pca" if args.pca else ""}_train_activations.pt'):
                 print('Loading saved training activations...')
-                activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_train_activations.pt', weights_only=False)
+                activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}{"_pca" if args.pca else ""}_train_activations.pt', weights_only=False)
             else:
                 model(stimulus_train)
                 activations = model.get_activations(args.hook)
-                torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_train_activations.pt')
+                torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}{"_pca" if args.pca else ""}_train_activations.pt')
 
         print('Fitting the regressions...')
         if isinstance(model, (linear_reg, ridge_reg, mlp_reg)):
@@ -158,13 +158,13 @@ def _linprob(model, seed, args):
         print('Testing the regression...')
         model.reset_activations()
 
-        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_valid_activations.pt'):
+        if args.saved and os.path.exists(f'{save_folder}/activations/{args.name}_{args.hook}{"_pca" if args.pca else ""}_valid_activations.pt'):
             print('Loading saved validation activations...')
-            activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_valid_activations.pt', weights_only=False)
+            activations = torch.load(f'{save_folder}/activations/{args.name}_{args.hook}{"_pca" if args.pca else ""}_valid_activations.pt', weights_only=False)
         else:
             model(stimulus_val)
             activations = model.get_activations(args.hook)
-            torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}_{"pca" if args.pca else ""}_valid_activations.pt')
+            torch.save(activations, f'{save_folder}/activations/{args.name}_{args.hook}{"_pca" if args.pca else ""}_valid_activations.pt')
 
         ## Remove handles
         for handle in handles:
@@ -188,7 +188,7 @@ def _compute_score(y_true, y_pred, layer_name, args):
 
     # Compute mean R² score
     r2 = r2_score(y_true, y_pred)
-    name = f'{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}_{"pca" if args.pca else ""}'
+    name = f'{args.name}_{"finetuned" if args.finetune else "pretrained"}_{layer_name}{f"_{args.probing}" if not args.finetune else ""}_{args.hook}{"_pca" if args.pca else ""}'
     new_score = {name: r2}
     Plotter.update_r2_score_csv(new_score, f"{save_folder}/r2_scores.csv")
     Plotter.save_r2_table(

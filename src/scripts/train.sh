@@ -1,5 +1,4 @@
-declare -a names=("ResNet18" "ResNet50" "ResNeXt")
-# declare -a names=("ResNet18" "ResNet50" "ResNeXt" "ConvNeXt" "ViT" "DinoV2")
+declare -a names=("ResNet50" "ResNeXt")
 declare -a layers=("layer3" "layer4")
 
 for name in "${names[@]}"; do

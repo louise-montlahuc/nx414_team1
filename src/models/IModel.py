@@ -25,7 +25,7 @@ class IModel(ABC, nn.Module):
         """
         layers = []
         layers_name = [name for name, _ in self.model.named_children()]
-        for name in layers_name[-4:]:
+        for name in layers_name[-4:-1]:
             module = self.model.get_submodule(name)
             layers.append((name, module))
         return layers
