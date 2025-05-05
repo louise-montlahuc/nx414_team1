@@ -162,8 +162,5 @@ class ModifiedModel(IModel):
         x = self.fc(x)
         return x
     
-    def get_layers(self, driven):
-        if driven == 'data':
-            return [(self.layer_name, self.layer)]
-
-        return super().get_layers(driven)
+    def get_layers(self):
+        return [(self.layer_name, self.layer)]
