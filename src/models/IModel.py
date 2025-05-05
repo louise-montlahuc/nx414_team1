@@ -50,14 +50,12 @@ class IModel(ABC, nn.Module):
         """
         self.PCs = dict()
         self.ACTs = dict()
-        self.PCA = dict()
-        self.pca_fitted = []
 
     def _get_PCs_hook(self, module, input, output, layer_name):
         print('Layer:', layer_name)
         activations = output.detach().cpu().numpy().reshape(output.shape[0], -1)
         print('Activations shape:', activations.shape)
-        if min(activations.shape) > 1000:
+        if activations.shape[1] > 1000:
             if layer_name in self.pca_fitted:
                 pca_features = self.PCA[layer_name].transform(activations)
                 print('Principal components shape:', pca_features.shape)
