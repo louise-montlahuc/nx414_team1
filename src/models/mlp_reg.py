@@ -28,13 +28,13 @@ class mlp_reg(IModel):
         with torch.no_grad():
             return self(X)
     
-    def get_layers(self):
+    def get_layers(self, driven):
         return [('mlp_regression', None)]
     
     def get_activations(self, layer):
         print("Returning activations:", self.ACTs.keys())
         return self.ACTs
 
-    def register_hook(self, hook_name):
+    def register_hook(self, hook_name, driven):
         print(f"Linear model does not support hooks. Hook name: {hook_name}")
         return []

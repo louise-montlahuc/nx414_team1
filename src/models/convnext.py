@@ -9,7 +9,7 @@ class ConvNeXt(IModel):
         super(ConvNeXt, self).__init__()
         self.model = convnext_base(weights=ConvNeXt_Base_Weights.IMAGENET1K_V1)
     
-    def get_layers(self):
+    def get_layers(self, driven):
         """
         Returns the layers on which to do the linear probing.
         """    
