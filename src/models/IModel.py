@@ -20,17 +20,20 @@ class IModel(ABC, nn.Module):
     def forward(self, images):
         return self.model(images)
     
-    def get_layers(self, driven):
+    def get_layers(self, layer_name=None):
         """
         Returns the layers on which to do the linear probing.
         """
         layers = []
-        layers_name = [name for name, _ in self.model.named_children()]
-        for name in layers_name[-4:-1]:
-            module = self.model.get_submodule(name)
-            layers.append((name, module))
+        if not layer_name:
+            layers_name = [name for name, _ in self.model.named_children()]
+            for name in layers_name[-4:-1]:
+                module = self.model.get_submodule(name)
+                layers.append((name, module))
+        else:
+            module = self.model.get_submodule(layer_name)
+            layers.append((layer_name, module))
         return layers
-        
         
     def get_activations(self, hook_name):
         """
@@ -77,13 +80,15 @@ class IModel(ABC, nn.Module):
         activations = output.detach().cpu().numpy().reshape(output.shape[0], -1)
         self.ACTs[layer_name] = activations
     
-    def register_hook(self, hook_name, driven):
+    def register_hook(self, hook_name, finetune, layer_name):
         """
         Registers a hook to the model.
         The hook can be 'all' for all activations or 'pca' for 1000 principal components.
         """
         handles = []
-        for name, layer in self.get_layers(driven):
+        layers = self.get_layers(layer_name) if finetune else self.get_layers()
+            
+        for name, layer in layers:
             if hook_name == 'all':
                 handle = layer.register_forward_hook(lambda m, i, o, n=name: self._get_activations_hook(m, i, o, n))
             elif hook_name == 'pca':
