@@ -9,3 +9,9 @@ class ResNet50(IModel):
         super(ResNet50, self).__init__()
         self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 
+@MODEL_REGISTRY.register()    
+class ResNet50_randomW(IModel):
+    def __init__(self):
+        super(ResNet50_randomW, self).__init__()
+        self.model = resnet50(weights=None) 
+
