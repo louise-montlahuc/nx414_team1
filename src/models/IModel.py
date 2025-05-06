@@ -101,66 +101,138 @@ class IModel(ABC, nn.Module):
         Sets a final head (classification or regression) after the indicated layer.
         """
         return ModifiedModel(self.model, layer, num_classes)
-
-
+    
+    
+    
 class ModifiedModel(IModel):
     def __init__(self, base_model, insert_after, num_classes):
         super().__init__()
         self.model = base_model
-        self.base_model = base_model
         self.insert_after = insert_after
         self.num_classes = num_classes
-        self.layer_name = insert_after
+        
+        # Register hook on specified layer
+        self._register_hook()
 
-        # Extract layers up to the insertion point
-        self.features = nn.Sequential()
-        for name, module in base_model.named_children():
-            if isinstance(module, nn.ModuleList):
-                for subname, submodule in module.named_children():
-                    self.features.add_module(subname, submodule)
-                    if f'{name}.{subname}' == insert_after:
-                        self.layer = (name, module)
-                        break
-                else:
-                    continue
-                break
-            else:
-                self.features.add_module(name, module)
-                if name == insert_after:
-                    self.layer = (name, module)
-                    break
-
-        # Determine input dim for new head
+        # Run dummy forward to get shape of features
         dummy_input = torch.randn(1, 3, 224, 224)
         with torch.no_grad():
-            features = self._forward_features(dummy_input)
-            pooled = nn.AdaptiveAvgPool2d((16, 16))(features)
-            flat = pooled.view(pooled.size(0), -1)
-            head_in_features = flat.shape[1]  
+            _ = self.model(dummy_input)
+            features = self.captured_features
 
-        # Define new head (classification or regression)
+        # Process features according to type (ViT vs CNN)
+        if features.dim() == 4:  # CNN style: [B, C, H, W]
+            features = nn.AdaptiveAvgPool2d((16, 16))(features)
+            features = features.reshape(features.size(0), -1)
+        elif features.dim() == 3:  # ViT style: [B, N, D]
+            features = features[:, 0]  # Use only [CLS] token
+        else:
+            raise ValueError("Unknown feature shape from intercepted layer")
+
+        in_features = features.shape[1]
+
+        # Define classifier head
         self.fc = nn.Sequential(
             nn.AdaptiveAvgPool2d((16, 16)),
             nn.Flatten(),
-            nn.Linear(head_in_features, 1024),
+            nn.Linear(in_features, 1024),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.Linear(1024, num_classes)
-        )
+        ) if features.dim() == 4 else  nn.Sequential(
+                nn.Linear(in_features, 1024),
+                nn.ReLU(),
+                nn.Dropout(0.3),
+                nn.Linear(1024, num_classes)
+            )
+        
 
-    def _forward_features(self, x):
-        for name, module in self.features.named_children():
-            if isinstance(module, nn.ModuleList):
-                for submodule in module:
-                    x = submodule(x)
-            else:
-                x = module(x)
-        return x
+    def _register_hook(self):
+        def hook_fn(module, input, output):
+            self.captured_features = output
+
+        # Traverse and hook the desired layer
+        for name, module in self.model.named_modules():
+            if name == self.insert_after:
+                module.register_forward_hook(hook_fn)
+                self.hooked_layer = module
+                return
+        raise ValueError(f"Layer '{self.insert_after}' not found in model.")
 
     def forward(self, x):
-        x = self._forward_features(x)
-        x = self.fc(x)
-        return x
-    
+        _ = self.model(x)
+        features = self.captured_features
+
+        if features.dim() == 4:  # CNN
+            features = nn.AdaptiveAvgPool2d((16, 16))(features)
+            features = features.reshape(features.size(0), -1)
+        elif features.dim() == 3:  # ViT
+            features = features[:, 0]
+
+        return self.fc(features)
+
     def get_layers(self, layer_name=None):
-        return [(self.layer_name, self.layer[1])]
+        return [(self.insert_after, self.hooked_layer)]
+
+
+# class ModifiedModel(IModel):
+#     def __init__(self, base_model, insert_after, num_classes):
+#         super().__init__()
+#         self.model = base_model
+#         self.base_model = base_model
+#         self.insert_after = insert_after
+#         self.num_classes = num_classes
+#         self.layer_name = insert_after
+
+#         # Extract layers up to the insertion point
+#         self.features = nn.Sequential()
+#         for name, module in base_model.named_children():
+#             if isinstance(module, nn.ModuleList):
+#                 for subname, submodule in module.named_children():
+#                     self.features.add_module(subname, submodule)
+#                     if f'{name}.{subname}' == insert_after:
+#                         self.layer = (name, module)
+#                         break
+#                 else:
+#                     continue
+#                 break
+#             else:
+#                 self.features.add_module(name, module)
+#                 if name == insert_after:
+#                     self.layer = (name, module)
+#                     break
+
+#         # Determine input dim for new head
+#         dummy_input = torch.randn(1, 3, 224, 224)
+#         with torch.no_grad():
+#             features = self._forward_features(dummy_input)
+#             pooled = nn.AdaptiveAvgPool2d((16, 16))(features)
+#             flat = pooled.view(pooled.size(0), -1)
+#             head_in_features = flat.shape[1]  
+
+#         # Define new head (classification or regression)
+#         self.fc = nn.Sequential(
+#             nn.AdaptiveAvgPool2d((16, 16)),
+#             nn.Flatten(),
+#             nn.Linear(head_in_features, 1024),
+#             nn.ReLU(),
+#             nn.Dropout(0.3),
+#             nn.Linear(1024, num_classes)
+#         )
+
+#     def _forward_features(self, x):
+#         for name, module in self.features.named_children():
+#             if isinstance(module, nn.ModuleList):
+#                 for submodule in module:
+#                     x = submodule(x)
+#             else:
+#                 x = module(x)
+#         return x
+
+#     def forward(self, x):
+#         x = self._forward_features(x)
+#         x = self.fc(x)
+#         return x
+    
+#     def get_layers(self, layer_name=None):
+#         return [(self.layer_name, self.layer[1])]
