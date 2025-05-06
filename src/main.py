@@ -13,7 +13,6 @@ def main(args):
     download_data('./data/') # Download the data if not already done
     model = make_model(args.name, seed)
     if args.finetune:
-        # TODO finetuning shouldn't use the same validation dataset as the probing!!
         model = finetune(model, args)
         model.load_state_dict(torch.load(f'./saved/models/{args.name}_best_model.pth'))
         model.to('cpu') # Make sure the model is back on CPU
