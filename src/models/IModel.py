@@ -163,4 +163,4 @@ class ModifiedModel(IModel):
         return x
     
     def get_layers(self, layer_name=None):
-        return [(self.layer_name, self.layer)]
+        return [(self.layer_name, self.layer[1])]
