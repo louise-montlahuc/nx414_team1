@@ -123,6 +123,7 @@ class ModifiedModel(IModel):
         # Process features according to type (ViT vs CNN)
         if features.dim() == 4:  # CNN style: [B, C, H, W]
             features = nn.AdaptiveAvgPool2d((16, 16))(features)
+            # nn.AdaptiveAvgPool2d((24, 24)),
             features = features.reshape(features.size(0), -1)
         elif features.dim() == 3:  # ViT style: [B, N, D]
             features = features[:, 0]  # Use only [CLS] token
@@ -134,6 +135,7 @@ class ModifiedModel(IModel):
         # Define classifier head
         self.fc = nn.Sequential(
             nn.AdaptiveAvgPool2d((16, 16)),
+            # nn.AdaptiveAvgPool2d((24, 24)),
             nn.Flatten(),
             nn.Linear(in_features, 1024),
             nn.ReLU(),
@@ -165,6 +167,7 @@ class ModifiedModel(IModel):
 
         if features.dim() == 4:  # CNN
             features = nn.AdaptiveAvgPool2d((16, 16))(features)
+            # nn.AdaptiveAvgPool2d((24, 24)),
             features = features.reshape(features.size(0), -1)
         elif features.dim() == 3:  # ViT
             features = features[:, 0]
